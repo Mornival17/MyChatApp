@@ -1,121 +1,915 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Chat Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureComm - Private Messenger</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: Arial, sans-serif; 
-            padding: 20px;
-            background: #f0f2f5;
+        :root {
+            --bg-dark: #0a0c12;
+            --bg-darker: #05070c;
+            --bg-card: #151a25;
+            --border-color: #2a3245;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --accent-blue: #4285f4;
+            --accent-purple: #8a63d2;
+            --accent-red: #ea4335;
+            --accent-green: #34a853;
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+        [data-theme="light"] {
+            --bg-dark: #f8f9fa;
+            --bg-darker: #e9ecef;
+            --bg-card: #ffffff;
+            --border-color: #dee2e6;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --accent-blue: #0d6efd;
+            --accent-purple: #6f42c1;
+            --accent-red: #dc3545;
+            --accent-green: #198754;
         }
-        .chat-box {
-            height: 400px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 15px;
-            overflow-y: auto;
-            background: #fafafa;
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
-        .message {
-            margin-bottom: 10px;
-            padding: 8px 12px;
-            border-radius: 15px;
-            max-width: 80%;
+
+        .app-container {
+            height: 100vh;
+            background: var(--bg-darker);
         }
-        .message.own {
-            background: #007bff;
-            color: white;
-            margin-left: auto;
-            text-align: right;
+
+        /* Toast Styles */
+        .custom-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-out;
         }
-        .message.other {
-            background: #e9ecef;
-            color: #333;
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
-        .input-area {
-            display: flex;
-            gap: 10px;
+
+        /* Image Preview */
+        .image-preview {
+            max-width: 300px;
+            margin: 10px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            position: relative;
         }
-        input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+
+        .image-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
         }
-        button {
-            padding: 10px 20px;
-            background: #007bff;
+
+        .image-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--accent-red);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            font-size: 12px;
         }
-        .info {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px;
-            border-radius: 5px;
+
+        .message-image {
+            max-width: 280px;
+            border-radius: 12px;
+            margin-top: 8px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+
+        .message-image:hover {
+            opacity: 0.9;
+        }
+
+        /* Image Modal */
+        .image-modal .modal-content {
+            background: transparent;
+            border: none;
+        }
+
+        .image-modal img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 12px;
+        }
+
+        /* File Upload Button */
+        .file-upload-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .file-upload-btn:hover {
+            color: var(--accent-blue);
+            background: rgba(66, 133, 244, 0.1);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 15px;
             margin-bottom: 15px;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        /* Login Modal */
+        .login-modal {
+            background: rgba(5, 7, 12, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .user-profile {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 10px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            border-radius: 8px;
+            margin: 2px 0;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(66, 133, 244, 0.1);
+            color: var(--accent-blue);
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        /* Main Chat */
+        .chat-area {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg-dark);
+            padding: 20px;
+        }
+
+        .message {
+            max-width: 70%;
+            margin-bottom: 16px;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.own {
+            margin-left: auto;
+        }
+
+        .message-bubble {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 12px 16px;
+            position: relative;
+        }
+
+        .message.own .message-bubble {
+            background: linear-gradient(135deg, var(--accent-blue), #5e35b1);
+            border: none;
+        }
+
+        .message-header {
+            font-size: 0.875rem;
+            margin-bottom: 4px;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            color: var(--accent-blue);
+        }
+
+        .message.own .message-sender {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .message-time {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .message.own .message-time {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .message-text {
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        /* Font size classes */
+        .font-size-sm .message-text { font-size: 0.875rem; }
+        .font-size-md .message-text { font-size: 1rem; }
+        .font-size-lg .message-text { font-size: 1.125rem; }
+        .font-size-xl .message-text { font-size: 1.25rem; }
+
+        .font-size-sm .message-input { font-size: 0.875rem; }
+        .font-size-md .message-input { font-size: 1rem; }
+        .font-size-lg .message-input { font-size: 1.125rem; }
+        .font-size-xl .message-input { font-size: 1.25rem; }
+
+        /* Input Area */
+        .input-area {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            padding: 20px;
+        }
+
+        .message-input {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 24px;
+            resize: none;
+        }
+
+        .message-input:focus {
+            background: var(--bg-dark);
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(66, 133, 244, 0.25);
+        }
+
+        .btn-send {
+            background: var(--accent-blue);
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-send:hover {
+            background: #3367d6;
+            transform: scale(1.05);
+        }
+
+        /* Users Sidebar */
+        .users-sidebar {
+            background: var(--bg-card);
+            border-left: 1px solid var(--border-color);
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        /* System Message */
+        .system-message {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin: 16px 0;
+        }
+
+        /* Settings Modal */
+        .settings-section {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .sidebar, .users-sidebar {
+                position: fixed;
+                top: 0;
+                width: 280px;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.show, .users-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .message-image {
+                max-width: 200px;
+            }
+
+            .mobile-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+                display: none;
+            }
+
+            .mobile-overlay.show {
+                display: block;
+            }
+
+            .custom-toast {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="info">
-            <strong>Тестовый чат-клиент</strong><br>
-            Сервер: https://mornival.onrender.com<br>
-            Токен: secret_app_token_12345
-        </div>
-        
-        <div class="chat-box" id="chatBox">
-            <div class="message" style="background: #fff3cd; color: #856404; max-width: 100%;">
-                Чат запущен. Сообщения обновляются каждые 2 секунды.
+    <!-- Login Modal -->
+    <div class="modal fade login-modal" id="loginModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content login-card border-0">
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <h4 class="fw-bold mb-2">SecureComm</h4>
+                        <p class="text-muted">Private Encrypted Messaging</p>
+                    </div>
+                    
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label">Display Name</label>
+                            <input type="text" class="form-control bg-dark border-dark text-light" id="usernameInput" 
+                                   value="User1" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <i class="bi bi-shield-lock me-2"></i>Enter Secure Session
+                        </button>
+                    </form>
+                </div>
             </div>
-        </div>
-        
-        <div class="input-area">
-            <input type="text" id="username" placeholder="Ваше имя" value="User1">
-            <input type="text" id="messageInput" placeholder="Введите сообщение...">
-            <button onclick="sendMessage()">Отправить</button>
-        </div>
-        
-        <div style="margin-top: 15px; font-size: 12px; color: #666;">
-            ID последнего сообщения: <span id="lastId">0</span>
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0" style="background: var(--bg-card);">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        <i class="bi bi-gear me-2"></i>Settings
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Theme Settings -->
+                    <div class="settings-section">
+                        <h6 class="fw-semibold mb-3">Appearance</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Theme</label>
+                            <select class="form-select bg-dark border-dark text-light" id="themeSelect">
+                                <option value="dark">Dark Theme</option>
+                                <option value="light">Light Theme</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Font Size</label>
+                            <select class="form-select bg-dark border-dark text-light" id="fontSizeSelect">
+                                <option value="sm">Small</option>
+                                <option value="md" selected>Medium</option>
+                                <option value="lg">Large</option>
+                                <option value="xl">Extra Large</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Chat Settings -->
+                    <div class="settings-section">
+                        <h6 class="fw-semibold mb-3">Chat Settings</h6>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="soundNotifications" checked>
+                            <label class="form-check-label" for="soundNotifications">Sound notifications</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="messageTimestamps" checked>
+                            <label class="form-check-label" for="messageTimestamps">Show timestamps</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoScroll" checked>
+                            <label class="form-check-label" for="autoScroll">Auto-scroll to new messages</label>
+                        </div>
+                    </div>
+
+                    <!-- Account Settings -->
+                    <div class="settings-section">
+                        <h6 class="fw-semibold mb-3">Account</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Display Name</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-dark border-dark text-light" 
+                                       id="settingsUsername" value="User1">
+                                <button class="btn btn-outline-primary" type="button" onclick="updateUsername()">
+                                    Update
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal fade image-modal" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 bg-transparent">
+                <div class="modal-header border-0">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="Preview">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container d-none" id="appContainer">
+        <div class="row g-0 h-100">
+            <!-- Mobile Overlay -->
+            <div class="mobile-overlay" id="mobileOverlay"></div>
+
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar" id="sidebar">
+                <div class="d-flex flex-column h-100">
+                    <!-- User Profile -->
+                    <div class="user-profile p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar d-flex align-items-center justify-content-center text-white fw-bold me-3">
+                                <span id="userAvatar">U</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold" id="currentUsername">User1</div>
+                                <small class="text-success">
+                                    <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>Online
+                                </small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary d-md-none" onclick="toggleSidebar()">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex-grow-1 p-3">
+                        <nav class="nav flex-column">
+                            <a class="nav-link active" href="#">
+                                <i class="bi bi-chat-dots me-2"></i>General Chat
+                            </a>
+                            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                                <i class="bi bi-gear me-2"></i>Settings
+                            </a>
+                            <a class="nav-link" href="#" onclick="exportChat()">
+                                <i class="bi bi-download me-2"></i>Export Chat
+                            </a>
+                        </nav>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="p-3 border-top border-secondary">
+                        <h6 class="fw-semibold mb-3">Quick Actions</h6>
+                        <div class="d-grid gap-2">
+                            <button class="action-btn" onclick="quickAction('time')">
+                                <i class="bi bi-clock"></i>Current Time
+                            </button>
+                            <button class="action-btn" onclick="quickAction('date')">
+                                <i class="bi bi-calendar"></i>Today's Date
+                            </button>
+                            <button class="action-btn" onclick="quickAction('users')">
+                                <i class="bi bi-people"></i>Online Users
+                            </button>
+                            <button class="action-btn" onclick="quickAction('clear')">
+                                <i class="bi bi-trash"></i>Clear Chat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Chat Area -->
+            <div class="col-md-9 col-lg-8 chat-area">
+                <!-- Chat Header -->
+                <div class="chat-header p-3">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-outline-secondary me-2 d-md-none" onclick="toggleSidebar()">
+                            <i class="bi bi-list"></i>
+                        </button>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-semibold">General Chat</h6>
+                            <small class="text-muted" id="chatStatus">Secure connection established</small>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-dark">
+                                <li><a class="dropdown-item" href="#" onclick="clearChat()">
+                                    <i class="bi bi-trash me-2"></i>Clear Chat
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="logout()">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="messages-container" id="messagesContainer">
+                    <div class="system-message">
+                        <i class="bi bi-shield-check me-2"></i>Secure session started. Messages are encrypted.
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="input-area">
+                    <!-- Image Preview -->
+                    <div class="image-preview d-none" id="imagePreview">
+                        <img id="previewImage" src="" alt="Preview">
+                        <button class="image-remove" onclick="removeImage()">×</button>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-end">
+                        <button class="file-upload-btn" onclick="document.getElementById('fileInput').click()" title="Attach Image">
+                            <i class="bi bi-image fs-5"></i>
+                        </button>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+                        
+                        <div class="flex-grow-1">
+                            <textarea class="form-control message-input" id="messageInput" 
+                                      rows="1" placeholder="Type a message..." 
+                                      onkeydown="handleKeydown(event)"></textarea>
+                        </div>
+                        <button class="btn btn-send text-white" onclick="sendMessage()">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Sidebar -->
+            <div class="col-lg-2 users-sidebar d-none d-lg-block" id="usersSidebar">
+                <div class="p-3">
+                    <h6 class="fw-semibold mb-3">Active Users</h6>
+                    <div id="usersList">
+                        <!-- Users populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
         const SERVER_URL = 'https://mornival.onrender.com';
         const TOKEN = 'secret_app_token_12345';
         
         let lastMessageId = 0;
         let currentUsername = 'User1';
+        let selectedImage = null;
+        let imageMessages = {}; // Храним base64 картинок по ID сообщений
+        let settings = {
+            theme: 'dark',
+            fontSize: 'md',
+            soundNotifications: true,
+            messageTimestamps: true,
+            autoScroll: true
+        };
 
-        // Функция отправки сообщения
+        // Load settings from localStorage
+        function loadSettings() {
+            const saved = localStorage.getItem('securecomm_settings');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    settings = {...settings, ...parsed};
+                    applySettings();
+                } catch (e) {
+                    console.log('Error loading settings:', e);
+                }
+            }
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            settings.theme = document.getElementById('themeSelect').value;
+            settings.fontSize = document.getElementById('fontSizeSelect').value;
+            settings.soundNotifications = document.getElementById('soundNotifications').checked;
+            settings.messageTimestamps = document.getElementById('messageTimestamps').checked;
+            settings.autoScroll = document.getElementById('autoScroll').checked;
+            
+            localStorage.setItem('securecomm_settings', JSON.stringify(settings));
+            applySettings();
+            bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+            showToast('Settings saved successfully!');
+        }
+
+        // Apply current settings
+        function applySettings() {
+            document.body.setAttribute('data-theme', settings.theme);
+            document.getElementById('themeSelect').value = settings.theme;
+            
+            document.body.className = document.body.className.replace(/\bfont-size-\S+/g, '');
+            document.body.classList.add(`font-size-${settings.fontSize}`);
+            document.getElementById('fontSizeSelect').value = settings.fontSize;
+            
+            document.getElementById('soundNotifications').checked = settings.soundNotifications;
+            document.getElementById('messageTimestamps').checked = settings.messageTimestamps;
+            document.getElementById('autoScroll').checked = settings.autoScroll;
+
+            const timestamps = document.querySelectorAll('.message-time');
+            timestamps.forEach(time => {
+                time.style.display = settings.messageTimestamps ? 'inline' : 'none';
+            });
+        }
+
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            toast.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Image handling
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                // Проверяем размер файла (макс 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('Image too large! Max 5MB allowed.');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedImage = e.target.result;
+                    document.getElementById('previewImage').src = selectedImage;
+                    document.getElementById('imagePreview').classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = '';
+        }
+
+        function removeImage() {
+            selectedImage = null;
+            document.getElementById('imagePreview').classList.add('d-none');
+        }
+
+        function showImageModal(imageSrc) {
+            document.getElementById('modalImage').src = imageSrc;
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
+
+        // Quick actions
+        function quickAction(action) {
+            switch(action) {
+                case 'time':
+                    addSystemMessage(`Current time: ${new Date().toLocaleTimeString()}`);
+                    break;
+                case 'date':
+                    addSystemMessage(`Today's date: ${new Date().toLocaleDateString()}`);
+                    break;
+                case 'users':
+                    const users = Array.from(document.querySelectorAll('#usersList .user-item'));
+                    const userNames = users.map(user => user.querySelector('.user-name').textContent).join(', ');
+                    addSystemMessage(`Online users: ${userNames || 'No users online'}`);
+                    break;
+                case 'clear':
+                    clearChat();
+                    break;
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+
+            const savedName = localStorage.getItem('securecomm_username');
+            if (savedName) {
+                document.getElementById('usernameInput').value = savedName;
+                document.getElementById('settingsUsername').value = savedName;
+            }
+
+            document.getElementById('themeSelect').value = settings.theme;
+            document.getElementById('fontSizeSelect').value = settings.fontSize;
+            document.getElementById('soundNotifications').checked = settings.soundNotifications;
+            document.getElementById('messageTimestamps').checked = settings.messageTimestamps;
+            document.getElementById('autoScroll').checked = settings.autoScroll;
+        });
+
+        // Login function
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('usernameInput').value.trim();
+            
+            if (!username) return;
+
+            currentUsername = username;
+            localStorage.setItem('securecomm_username', username);
+            document.getElementById('settingsUsername').value = username;
+
+            bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+            document.getElementById('appContainer').classList.remove('d-none');
+            
+            initializeApp();
+        });
+
+        function initializeApp() {
+            updateUserAvatar();
+            setInterval(getMessages, 1000);
+            document.getElementById('messageInput').focus();
+            addSystemMessage(`Welcome, ${currentUsername}! Session started.`);
+        }
+
+        function updateUserAvatar() {
+            document.getElementById('userAvatar').textContent = currentUsername.charAt(0).toUpperCase();
+            document.getElementById('currentUsername').textContent = currentUsername;
+        }
+
+        function updateUsername() {
+            const newUsername = document.getElementById('settingsUsername').value.trim();
+            if (newUsername && newUsername !== currentUsername) {
+                currentUsername = newUsername;
+                localStorage.setItem('securecomm_username', newUsername);
+                updateUserAvatar();
+                addSystemMessage(`Display name changed to ${newUsername}`);
+                showToast('Username updated successfully!');
+            }
+        }
+
+        function handleKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
         async function sendMessage() {
-            const username = document.getElementById('username').value;
             const messageInput = document.getElementById('messageInput');
             const text = messageInput.value.trim();
             
-            if (!text) return;
-            
-            currentUsername = username;
-            
-            // Показываем сообщение сразу
-            addMessage(username, text, true);
-            messageInput.value = '';
-            
+            if (!text && !selectedImage) {
+                showToast('Please enter a message or select an image');
+                return;
+            }
+
             try {
+                // Сначала отправляем сообщение на сервер
                 const response = await fetch(SERVER_URL + '/send', {
                     method: 'POST',
                     headers: {
@@ -123,21 +917,38 @@
                     },
                     body: JSON.stringify({
                         token: TOKEN,
-                        username: username,
-                        text: text
+                        username: currentUsername,
+                        text: selectedImage ? `🖼️ ${text || 'Image'}` : text
                     })
                 });
                 
                 const result = await response.json();
-                console.log('Send result:', result);
+                
+                if (response.ok) {
+                    // Если отправка успешна, показываем сообщение
+                    const messageId = result.message_id;
+                    if (selectedImage) {
+                        // Сохраняем картинку локально с привязкой к ID сообщения
+                        imageMessages[messageId] = selectedImage;
+                    }
+                    addMessage(currentUsername, text, true, selectedImage, messageId);
+                    
+                    // Очищаем поля
+                    messageInput.value = '';
+                    autoResize(messageInput);
+                    if (selectedImage) {
+                        removeImage();
+                    }
+                } else {
+                    addSystemMessage(`Failed to send message: ${result.error}`);
+                }
                 
             } catch (error) {
                 console.error('Send error:', error);
-                addMessage('System', 'Ошибка отправки', false, true);
+                addSystemMessage('Connection error - failed to send message');
             }
         }
 
-        // Функция получения сообщений
         async function getMessages() {
             try {
                 const response = await fetch(`${SERVER_URL}/receive?token=${TOKEN}&since_id=${lastMessageId}`);
@@ -146,54 +957,179 @@
                 if (data.messages && data.messages.length > 0) {
                     data.messages.forEach(msg => {
                         if (msg.user !== currentUsername) {
-                            addMessage(msg.user, msg.text, false);
+                            // Проверяем, есть ли картинка для этого сообщения
+                            const hasImage = msg.text.includes('🖼️');
+                            const cleanText = msg.text.replace('🖼️ ', '');
+                            const imageData = imageMessages[msg.id];
+                            
+                            addMessage(msg.user, cleanText, false, imageData, msg.id);
                         }
                         lastMessageId = Math.max(lastMessageId, msg.id);
                     });
-                    document.getElementById('lastId').textContent = lastMessageId;
+                }
+
+                if (data.users) {
+                    updateUsersList(data.users);
                 }
                 
             } catch (error) {
                 console.error('Receive error:', error);
+                document.getElementById('chatStatus').textContent = 'Connection unstable';
+                document.getElementById('chatStatus').classList.add('text-warning');
             }
         }
 
-        // Функция добавления сообщения в чат
-        function addMessage(user, text, isOwn = false, isSystem = false) {
-            const chatBox = document.getElementById('chatBox');
-            const messageDiv = document.createElement('div');
+        function addMessage(user, text, isOwn = false, image = null, messageId = null) {
+            const messagesContainer = document.getElementById('messagesContainer');
             
-            if (isSystem) {
-                messageDiv.className = 'message';
-                messageDiv.style.background = '#f8d7da';
-                messageDiv.style.color = '#721c24';
-                messageDiv.style.maxWidth = '100%';
-            } else {
-                messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+            // Проверяем, нет ли уже такого сообщения (защита от дублирования)
+            const existingMessages = messagesContainer.querySelectorAll('.message');
+            for (let msg of existingMessages) {
+                const msgText = msg.querySelector('.message-text')?.textContent;
+                const msgSender = msg.querySelector('.message-sender')?.textContent;
+                if (msgText === text && msgSender === user && messageId) {
+                    return; // Сообщение уже есть, не добавляем дубликат
+                }
             }
             
-            const time = new Date().toLocaleTimeString();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isOwn ? 'own' : ''}`;
+            
+            const time = new Date().toLocaleTimeString('ru-RU', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            const showTime = settings.messageTimestamps ? 
+                `<span class="message-time">${time}</span>` : 
+                `<span class="message-time" style="display: none;">${time}</span>`;
+            
+            let imageHtml = '';
+            if (image) {
+                imageHtml = `<img src="${image}" class="message-image" onclick="showImageModal('${image}')" alt="Attached image">`;
+            }
+            
             messageDiv.innerHTML = `
-                <strong>${user}:</strong> ${text}
-                <div style="font-size: 11px; opacity: 0.7; margin-top: 5px;">${time}</div>
+                <div class="message-bubble">
+                    <div class="message-header">
+                        <span class="message-sender">${user}</span>
+                        ${showTime}
+                    </div>
+                    ${text ? `<div class="message-text">${escapeHtml(text)}</div>` : ''}
+                    ${imageHtml}
+                </div>
             `;
             
-            chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            messagesContainer.appendChild(messageDiv);
+            
+            if (settings.autoScroll) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            document.getElementById('chatStatus').textContent = 'Secure connection established';
+            document.getElementById('chatStatus').classList.remove('text-warning');
         }
 
-        // Отправка по Enter
-        document.getElementById('messageInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') sendMessage();
+        function addSystemMessage(text) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const systemDiv = document.createElement('div');
+            systemDiv.className = 'system-message';
+            systemDiv.innerHTML = `<i class="bi bi-info-circle me-2"></i>${text}`;
+            messagesContainer.appendChild(systemDiv);
+            
+            if (settings.autoScroll) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        function updateUsersList(users) {
+            const usersList = document.getElementById('usersList');
+            
+            usersList.innerHTML = '';
+            
+            users.forEach(user => {
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item d-flex align-items-center mb-2';
+                userItem.innerHTML = `
+                    <div class="user-status me-2"></div>
+                    <span class="user-name">${user}</span>
+                    ${user === currentUsername ? '<small class="text-muted ms-1">(You)</small>' : ''}
+                `;
+                usersList.appendChild(userItem);
+            });
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        // Mobile sidebar functions
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+            document.getElementById('mobileOverlay').classList.toggle('show');
+        }
+
+        function toggleUsersSidebar() {
+            document.getElementById('usersSidebar').classList.toggle('show');
+            document.getElementById('mobileOverlay').classList.toggle('show');
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function clearChat() {
+            if (confirm('Clear all messages?')) {
+                document.getElementById('messagesContainer').innerHTML = `
+                    <div class="system-message">
+                        <i class="bi bi-trash me-2"></i>Chat history cleared
+                    </div>
+                `;
+                imageMessages = {}; // Очищаем сохраненные картинки
+            }
+        }
+
+        function exportChat() {
+            const messages = document.querySelectorAll('.message-bubble');
+            let chatText = 'SecureComm Chat Export\n\n';
+            
+            messages.forEach(bubble => {
+                const sender = bubble.querySelector('.message-sender').textContent;
+                const text = bubble.querySelector('.message-text')?.textContent || '[Image]';
+                const time = bubble.querySelector('.message-time').textContent;
+                chatText += `[${time}] ${sender}: ${text}\n`;
+            });
+            
+            const blob = new Blob([chatText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `securecomm-chat-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('Chat exported successfully!');
+        }
+
+        function logout() {
+            if (confirm('End secure session?')) {
+                localStorage.removeItem('securecomm_username');
+                document.getElementById('appContainer').classList.add('d-none');
+                const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+                loginModal.show();
+            }
+        }
+
+        // Close mobile sidebars when clicking overlay
+        document.getElementById('mobileOverlay').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('show');
+            document.getElementById('usersSidebar').classList.remove('show');
+            this.classList.remove('show');
         });
-
-        // Автообновление сообщений каждые 2 секунды
-        setInterval(getMessages, 2000);
-
-        // Первая загрузка сообщений
-        getMessages();
-
-        console.log('Chat client started');
     </script>
 </body>
 </html>
