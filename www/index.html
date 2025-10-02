@@ -994,6 +994,17 @@
     justify-content: center;
 }
 
+
+.message-audio {
+    width: 250px;
+    margin-top: 8px;
+    border-radius: 20px;
+}
+
+.message-audio-container {
+    margin-top: 8px;
+}
+
     </style>
 </head>
 <body>
@@ -1477,6 +1488,8 @@
     const REACTIONS = ['👍', '❤️', '😂', '🎉', '😮', '😢'];
 
     // Global variables
+    let isRecording = false; 
+    let audioMessages = {}; 
     let lastMessageId = 0;
     let currentUsername = 'User1';
     let currentStatus = 'online';
@@ -1772,7 +1785,7 @@ document.body.classList.remove('modal-open');
     function setupDragAndDrop() {
         const dropZone = document.getElementById('dropZone');
         const inputArea = document.querySelector('.input-area');
-        
+        audioChunks
         inputArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.classList.remove('d-none');
@@ -1897,151 +1910,271 @@ document.body.classList.remove('modal-open');
         await sendMessageToServer(true);
     }
 
-    async function sendMessageToServer(selfDestruct = false) {
-        const input = document.getElementById('messageInput');
-        const text = input.value.trim();
-        
-        if (!text && !selectedImage) return;
 
-        // Добавляем сообщение в очередь
-        const messageData = {
-            text: text,
-            image: selectedImage,
-            selfDestruct: selfDestruct,
-            replyTo: currentReplyMessage,
-            timestamp: Date.now()
+
+
+
+
+
+
+
+async function sendMessageToServer(selfDestruct = false) {
+    const input = document.getElementById('messageInput');
+    const text = input.value.trim();
+    
+    // Проверяем есть ли что отправить
+    const hasText = text.length > 0;
+    const hasImage = selectedImage !== null;
+    const hasAudio = audioChunks.length > 0;
+    
+    if (!hasText && !hasImage && !hasAudio) return;
+
+    // Prepare message data
+    const messageData = {
+        text: text,
+        selfDestruct: selfDestruct,
+        replyTo: currentReplyMessage,
+        timestamp: Date.now(),
+        type: 'text'
+    };
+
+    // Determine message type and prepare media
+    if (hasImage) {
+        messageData.type = 'image';
+        messageData.image = selectedImage;
+        messageData.text = hasText ? text : '🖼️ Image';
+    } else if (hasAudio) {
+        messageData.type = 'audio';
+        // Конвертируем аудио в base64
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        messageData.audio = await blobToBase64(audioBlob);
+        messageData.text = hasText ? text : '🎤 Voice message';
+    } else {
+        // Текстовое сообщение
+        messageData.text = text;
+    }
+
+    // Добавляем в очередь
+    messageQueue.push(messageData);
+    
+    // Clear input and show temporary message
+    input.value = '';
+    input.style.height = 'auto';
+    
+    const tempId = 'temp_' + Date.now();
+    
+    // Создаем временное сообщение для отображения
+    const tempMessage = {
+        id: tempId,
+        sender: currentUsername,
+        text: messageData.text,
+        timestamp: new Date().toLocaleTimeString(),
+        replyTo: messageData.replyTo,
+        isOwn: true,
+        selfDestruct: selfDestruct,
+        isTemp: true,
+        type: messageData.type
+    };
+
+    // Добавляем медиа для временного отображения
+    if (hasImage) {
+        tempMessage.image = selectedImage;
+    } else if (hasAudio) {
+        // Для временного отображения используем blob URL
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        tempMessage.audio = URL.createObjectURL(audioBlob);
+    }
+
+    addMessageToChat(tempMessage);
+
+    // Clear media
+    selectedImage = null;
+    document.getElementById('imagePreview').classList.add('d-none');
+    audioChunks = []; // Очищаем аудио chunks
+    cancelReply();
+    
+    // Hide pickers
+    document.getElementById('emojiPickerContainer').classList.remove('show');
+    document.getElementById('templatesContainer').classList.remove('show');
+    
+    // Send to server
+    await processMessageQueue();
+}
+
+
+
+
+
+
+
+
+
+// Добавляем защиту в processMessageQueue
+async function processMessageQueue() {
+    if (isSending || messageQueue.length === 0) return;
+    
+    isSending = true;
+    const messageData = messageQueue[0];
+    
+    try {
+        // Проверяем что сообщение еще актуально
+        if (!messageData) {
+            messageQueue.shift();
+            return;
+        }
+        
+        const payload = {
+            username: currentUsername,
+            text: messageData.text,
+            type: messageData.type || 'text'
         };
-        
-        messageQueue.push(messageData);
-        
-        // Очищаем UI сразу для лучшего UX
-        input.value = '';
-        input.style.height = 'auto';
-        selectedImage = null;
-        document.getElementById('imagePreview').classList.add('d-none');
-        cancelReply();
-        
-        // Показываем локальное сообщение сразу
-        const tempId = 'temp_' + Date.now();
-        addMessageToChat({
-            id: tempId,
-            sender: currentUsername,
-            text: text,
-            timestamp: new Date().toLocaleTimeString(),
-            image: messageData.image,
-            replyTo: messageData.replyTo,
-            isOwn: true,
-            selfDestruct: selfDestruct,
-            isTemp: true
+
+        // Add image data if present
+        if (messageData.image) {
+            payload.image = messageData.image;
+        }
+
+        // Add audio data if present
+        if (messageData.audio) {
+            payload.audio = messageData.audio;
+            payload.type = 'audio';
+        }
+
+        console.log('Sending message, queue length:', messageQueue.length);
+
+        const response = await fetch(SERVER_URL + '/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
         });
         
-        // Пытаемся отправить
-        await processMessageQueue();
-    }
-
-    async function processMessageQueue() {
-        if (isSending || messageQueue.length === 0) return;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
         
-        isSending = true;
-        const messageData = messageQueue[0];
+        const result = await response.json();
         
-        try {
-            const payload = {
-                username: currentUsername,
-                text: messageData.image ? `🖼️ ${messageData.text || 'Image'}` : messageData.text
-            };
-
-            console.log('Sending message:', payload);
+        // Успешно отправлено - удаляем из очереди
+        messageQueue.shift();
+        retryCount = 0;
+        
+        // Обновляем временное сообщение
+        if (result.message_id) {
+            updateTempMessage(result.message_id, messageData, result.image_id, result.audio_id);
+        }
+        
+    } catch (error) {
+        console.error('Send error:', error);
+        
+        if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            showToast(`Retrying send... (${retryCount}/${MAX_RETRIES})`, 'warning');
             
-            const response = await fetch(SERVER_URL + '/send', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP ${response.status}`);
-            }
-            
-            const result = await response.json();
-            
-            // Успешно отправлено - удаляем из очереди
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            await processMessageQueue();
+        } else {
+            showToast('Failed to send message after several attempts', 'error');
             messageQueue.shift();
             retryCount = 0;
-            
-            // Обновляем временное сообщение на постоянное
-            if (result.message_id) {
-                updateTempMessage(result.message_id, messageData);
-            }
-            
-            // Прячем пикеры
-            document.getElementById('emojiPickerContainer').classList.remove('show');
-            document.getElementById('templatesContainer').classList.remove('show');
-            
-        } catch (error) {
-            console.error('Send error:', error);
-            
-            if (retryCount < MAX_RETRIES) {
-                retryCount++;
-                showToast(`Retrying send... (${retryCount}/${MAX_RETRIES})`, 'warning');
-                
-                // Ждем перед повторной попыткой
-                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-                await processMessageQueue();
-            } else {
-                // Все попытки исчерпаны
-                showToast('Failed to send message after several attempts', 'error');
-                messageQueue.shift();
-                retryCount = 0;
-                
-                // Помечаем сообщение как неотправленное
-                markMessageAsFailed();
-            }
-        } finally {
-            isSending = false;
-            
-            // Продолжаем обработку очереди, если есть сообщения
-            if (messageQueue.length > 0) {
-                setTimeout(processMessageQueue, 100);
-            }
+            markMessageAsFailed();
+        }
+    } finally {
+        isSending = false;
+        
+        // Продолжаем обработку очереди, если есть сообщения
+        if (messageQueue.length > 0) {
+            setTimeout(processMessageQueue, 100);
         }
     }
+}
 
-    function updateTempMessage(messageId, messageData) {
-        const tempMessage = document.querySelector(`[data-message-id^="temp_"]`);
-        if (tempMessage) {
-            tempMessage.dataset.messageId = messageId;
+
+
+
+
+
+
+
+
+// Helper function to convert blob to base64
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            resolve(dataUrl);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+function updateTempMessage(messageId, messageData, imageId, audioId) {
+    const tempMessage = document.querySelector(`[data-message-id^="temp_"]`);
+    if (tempMessage) {
+        tempMessage.dataset.messageId = messageId;
+
+        // Store media references
+        if (imageId && messageData.image) {
+            imageMessages[messageId] = messageData.image;
+        }
+        if (audioId && messageData.audio) {
+            audioMessages[messageId] = messageData.audio;
             
-            // Store image if present
-            if (messageData.image) {
-                imageMessages[messageId] = messageData.image;
-            }
-            
-            // Add self-destruct timer if needed
-            if (messageData.selfDestruct) {
-                selfDestructMessages.add(messageId);
-                setTimeout(() => {
-                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-                    if (messageElement) {
-                        messageElement.style.opacity = '0.5';
-                        messageElement.querySelector('.message-text').textContent = '🚫 This message has self-destructed';
-                        messageElement.querySelector('.message-bubble').classList.remove('self-destructing');
-                        selfDestructMessages.delete(messageId);
-                    }
-                }, 10000);
-            }
-            
-            // Remove temp indicator
-            tempMessage.classList.remove('temp-message');
-            const sendingIndicator = tempMessage.querySelector('.sending-indicator');
-            if (sendingIndicator) {
-                sendingIndicator.remove();
+            // Обновляем аудио элемент на серверную версию
+            const audioElement = tempMessage.querySelector('audio');
+            if (audioElement) {
+                // Создаем новый источник с серверными данными
+                const source = document.createElement('source');
+                source.src = messageData.audio;
+                source.type = 'audio/wav';
+                
+                // Очищаем старые источники и добавляем новый
+                audioElement.innerHTML = '';
+                audioElement.appendChild(source);
+                audioElement.load(); // Перезагружаем аудио
             }
         }
+          
+        // Add self-destruct timer if needed
+        if (messageData.selfDestruct) {
+            selfDestructMessages.add(messageId);
+            setTimeout(() => {
+                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                if (messageElement) {
+                    messageElement.style.opacity = '0.5';
+                    messageElement.querySelector('.message-text').textContent = '🚫 This message has self-destructed';
+                    messageElement.querySelector('.message-bubble').classList.remove('self-destructing');
+                    selfDestructMessages.delete(messageId);
+                }
+            }, 10000);
+        }
+
+        // Remove temp indicator
+        tempMessage.classList.remove('temp-message');
+        const sendingIndicator = tempMessage.querySelector('.sending-indicator');
+        if (sendingIndicator) {
+            sendingIndicator.remove();
+        }
+        
+        // Очищаем audioChunks после успешной отправки
+        if (messageData.type === 'audio') {
+            audioChunks = [];
+        }
     }
+}
+
+
+
+
+
+
+
+
+
 
     function markMessageAsFailed() {
         const tempMessage = document.querySelector(`[data-message-id^="temp_"]`);
@@ -2058,174 +2191,264 @@ document.body.classList.remove('modal-open');
         }
     }
 
-    async function getMessages() {
-        if (!currentUsername || !currentRoomId) return;
-        
-        try {
-            const url = `${SERVER_URL}/receive?username=${encodeURIComponent(currentUsername)}&since_id=${lastMessageId}&_t=${Date.now()}`;
-            
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.messages && data.messages.length > 0) {
-                data.messages.forEach(msg => {
-                    // Пропускаем свои собственные временные сообщения
-                    if (msg.user === currentUsername && document.querySelector(`[data-message-id="${msg.id}"]`)) {
-                        return;
-                    }
-                    
-                    // Check if message has image
-                    const hasImage = msg.text.includes('🖼️');
-                    const cleanText = msg.text.replace('🖼️ ', '');
-                    const imageData = imageMessages[msg.id];
-                    
-                    addMessageToChat({
-                        id: msg.id,
-                        sender: msg.user,
-                        text: cleanText,
-                        timestamp: new Date(msg.time).toLocaleTimeString(),
-                        image: imageData,
-                        isOwn: msg.user === currentUsername
-                    });
 
-                    // Show browser notification for messages from others
-                    if (msg.user !== currentUsername && settings.browserNotifications && 'Notification' in window && Notification.permission === 'granted') {
-                        new Notification(`New message in ${currentRoom}`, {
-                            body: `${msg.user}: ${cleanText.length > 50 ? cleanText.substring(0, 50) + '...' : cleanText}`,
-                            icon: '/favicon.ico',
-                            tag: 'securecomm'
-                        });
-                    }
+
+
+
+
+
+
+
+async function getMessages() {
+    if (!currentUsername || !currentRoomId) return;
+    
+    try {
+        const url = `${SERVER_URL}/receive?username=${encodeURIComponent(currentUsername)}&since_id=${lastMessageId}&_t=${Date.now()}`;
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.messages && data.messages.length > 0) {
+            data.messages.forEach(msg => {
+                // Пропускаем свои собственные временные сообщения
+                if (msg.user === currentUsername && document.querySelector(`[data-message-id="${msg.id}"]`)) {
+                    return;
+                }
+                
+                // Обрабатываем разные типы сообщений
+                let imageData = null;
+                let audioData = null;
+                let displayText = msg.text;
+                
+                // Получаем медиаданные из сообщения
+                if (msg.image_data) {
+                    imageData = msg.image_data;
+                    // Убираем эмодзи из текста если есть изображение
+                    displayText = msg.text.replace('🖼️', '').trim();
+                }
+                if (msg.audio_data) {
+                    audioData = msg.audio_data;
+                    // Убираем эмодзи из текста если есть аудио
+                    displayText = msg.text.replace('🎤', '').trim();
+                }
+                
+                addMessageToChat({
+                    id: msg.id,
+                    sender: msg.user,
+                    text: displayText,
+                    timestamp: new Date(msg.time).toLocaleTimeString(),
+                    image: imageData,
+                    audio: audioData,
+                    isOwn: msg.user === currentUsername,
+                    type: msg.type || 'text'
                 });
-                
-                lastMessageId = Math.max(lastMessageId, ...data.messages.map(m => m.id));
-            }
 
-            if (data.users) {
-                updateUsersList(data.users);
-            }
+                // Показываем уведомления для сообщений от других
+                if (msg.user !== currentUsername && settings.browserNotifications && 'Notification' in window && Notification.permission === 'granted') {
+                    let notificationText = msg.text;
+                    if (msg.type === 'image') {
+                        notificationText = '📸 Image';
+                    } else if (msg.type === 'audio') {
+                        notificationText = '🎤 Voice message';
+                    }
+                    
+                    new Notification(`New message from ${msg.user}`, {
+                        body: notificationText,
+                        icon: '/favicon.ico',
+                        tag: 'securecomm'
+                    });
+                }
+            });
             
-            // Update room info
-            if (data.room_name && data.room_name !== currentRoom) {
-                currentRoom = data.room_name;
-                document.getElementById('roomNameDisplay').textContent = currentRoom;
-            }
-            
-            // Обновляем статус соединения
-            document.getElementById('chatStatus').innerHTML = 
-                `<span id="roomInfo">Room: ${currentRoomId}</span> • Secure connection established`;
-            document.getElementById('chatStatus').classList.remove('text-warning');
-            
-        } catch (error) {
-            console.error('Receive error:', error);
-            document.getElementById('chatStatus').textContent = 'Connection unstable - reconnecting...';
-            document.getElementById('chatStatus').classList.add('text-warning');
-            
-            // Автоматический реконнект через 2 секунды
-            setTimeout(getMessages, 2000);
+            lastMessageId = Math.max(lastMessageId, ...data.messages.map(m => m.id));
         }
+
+        if (data.users) {
+            updateUsersList(data.users);
+        }
+        
+        // Update room info
+        if (data.room_name && data.room_name !== currentRoom) {
+            currentRoom = data.room_name;
+            document.getElementById('roomNameDisplay').textContent = currentRoom;
+        }
+        
+        // Обновляем статус соединения
+        document.getElementById('chatStatus').innerHTML = 
+            `<span id="roomInfo">Room: ${currentRoomId}</span> • Secure connection established`;
+        document.getElementById('chatStatus').classList.remove('text-warning');
+        
+    } catch (error) {
+        console.error('Receive error:', error);
+        document.getElementById('chatStatus').textContent = 'Connection unstable - reconnecting...';
+        document.getElementById('chatStatus').classList.add('text-warning');
+        
+        // Автоматический реконнект через 2 секунды
+        setTimeout(getMessages, 2000);
     }
+}
 
-    function addMessageToChat(message) {
-        const container = document.getElementById('messagesContainer');
-        
-        // Check for duplicate messages
-        const existingMessage = container.querySelector(`[data-message-id="${message.id}"]`);
-        if (existingMessage) return;
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${message.isOwn ? 'own' : ''} font-size-${currentFontSize} ${message.isTemp ? 'temp-message' : ''}`;
-        messageDiv.dataset.messageId = message.id;
-        
-        let imageHtml = '';
-        if (message.image) {
-            imageHtml = `
-                <div class="message-image-container">
-                    <img src="${message.image}" alt="Attached image" class="message-image" 
-                         onclick="showImageModal('${message.image}')">
-                </div>
-            `;
-            if (!message.isTemp) {
-                imageMessages[message.id] = message.image;
-            }
-        }
-        
-        let replyHtml = '';
-        if (message.replyTo) {
-            replyHtml = `
-                <div class="reply-preview">
-                    <div class="reply-sender">${message.replyTo.sender}</div>
-                    <div class="reply-text">${message.replyTo.text}</div>
-                </div>
-            `;
-        }
 
-        // Self-destruct UI
-        let selfDestructHtml = '';
-        if (message.selfDestruct && !message.isTemp) {
-            selfDestructHtml = `<div class="destruct-timer">10</div>`;
-        }
-        
-        const showTime = settings.messageTimestamps ? 
-            `<span class="message-time">${message.timestamp}</span>` : 
-            `<span class="message-time" style="display: none;">${message.timestamp}</span>`;
-        
-        // Reactions for this message
-        const reactions = messageReactions[message.id] || {};
-        const reactionsHtml = Object.keys(reactions).length > 0 ? 
-            createReactionsHtml(message.id, reactions) : '';
 
-        messageDiv.innerHTML = `
-            <div class="message-bubble ${message.selfDestruct && !message.isTemp ? 'self-destructing' : ''}">
-                ${message.isTemp ? '<div class="sending-indicator">⏳</div>' : ''}
-                
-                <div class="message-actions">
-                    <button class="message-action-btn" onclick="showReactionPicker(${message.id})" title="Add Reaction">
-                        <i class="bi bi-emoji-smile"></i>
-                    </button>
-                    <button class="message-action-btn" onclick="replyToMessage(${message.id})" title="Reply">
-                        <i class="bi bi-reply"></i>
-                    </button>
-                    <button class="message-action-btn" onclick="pinMessage(${message.id})" title="Pin">
-                        <i class="bi bi-pin"></i>
-                    </button>
-                </div>
-                
-                ${selfDestructHtml}
-                ${replyHtml}
-                
-                <div class="message-header d-flex justify-content-between align-items-center">
-                    <span class="message-sender">${message.sender}</span>
-                    ${showTime}
-                </div>
-                
-                ${message.text ? `<div class="message-text">${formatMessageText(message.text)}</div>` : ''}
-                ${imageHtml}
-                ${reactionsHtml}
-                
-                <div class="reaction-picker" id="reactionPicker-${message.id}">
-                    ${REACTIONS.map(emoji => 
-                        `<div class="reaction-emoji" onclick="addReaction(${message.id}, '${emoji}')">${emoji}</div>`
-                    ).join('')}
-                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+function addMessageToChat(message) {
+    const container = document.getElementById('messagesContainer');
+    
+    // Check for duplicate messages
+    const existingMessage = container.querySelector(`[data-message-id="${message.id}"]`);
+    if (existingMessage) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${message.isOwn ? 'own' : ''} font-size-${currentFontSize} ${message.isTemp ? 'temp-message' : ''}`;
+    messageDiv.dataset.messageId = message.id;
+    messageDiv.dataset.messageType = message.type || 'text';
+    
+    let mediaHtml = '';
+    let displayText = message.text;
+    
+    // Handle different message types
+    if (message.type === 'image' && message.image) {
+        mediaHtml = `
+            <div class="message-image-container">
+                <img src="${message.image}" alt="Attached image" class="message-image" 
+                     onclick="showImageModal('${message.image}')">
             </div>
         `;
-        
-        container.appendChild(messageDiv);
-        
-        if (!message.isOwn && settings.soundNotifications && !message.isTemp) {
-            playMessageSound();
+        // Не показываем текст "Image" если есть изображение
+        displayText = '';
+        if (!message.isTemp) {
+            imageMessages[message.id] = message.image;
         }
-        
-        if (settings.autoScroll) {
-            scrollToBottom();
+    } else if (message.type === 'audio' && message.audio) {
+        mediaHtml = `
+            <div class="message-audio-container">
+                <audio controls class="message-audio">
+                    <source src="${message.audio}" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        `;
+        // Не показываем текст "Voice message" если есть аудио
+        displayText = '';
+        if (!message.isTemp) {
+            audioMessages[message.id] = message.audio;
+        }
+    } else if (message.image) {
+        // Fallback for old image format
+        mediaHtml = `
+            <div class="message-image-container">
+                <img src="${message.image}" alt="Attached image" class="message-image" 
+                     onclick="showImageModal('${message.image}')">
+            </div>
+        `;
+        displayText = '';
+        if (!message.isTemp) {
+            imageMessages[message.id] = message.image;
         }
     }
+    
+    let replyHtml = '';
+    if (message.replyTo) {
+        replyHtml = `
+            <div class="reply-preview">
+                <div class="reply-sender">${message.replyTo.sender}</div>
+                <div class="reply-text">${message.replyTo.text}</div>
+            </div>
+        `;
+    }
+
+    // Self-destruct UI
+    let selfDestructHtml = '';
+    if (message.selfDestruct && !message.isTemp) {
+        selfDestructHtml = `<div class="destruct-timer">10</div>`;
+    }
+    
+    const showTime = settings.messageTimestamps ? 
+        `<span class="message-time">${message.timestamp}</span>` : 
+        `<span class="message-time" style="display: none;">${message.timestamp}</span>`;
+    
+    // Reactions for this message
+    const reactions = messageReactions[message.id] || {};
+    const reactionsHtml = Object.keys(reactions).length > 0 ? 
+        createReactionsHtml(message.id, reactions) : '';
+
+    messageDiv.innerHTML = `
+        <div class="message-bubble ${message.selfDestruct && !message.isTemp ? 'self-destructing' : ''}">
+            ${message.isTemp ? '<div class="sending-indicator">⏳</div>' : ''}
+            
+            <div class="message-actions">
+                <button class="message-action-btn" onclick="showReactionPicker(${message.id})" title="Add Reaction">
+                    <i class="bi bi-emoji-smile"></i>
+                </button>
+                <button class="message-action-btn" onclick="replyToMessage(${message.id})" title="Reply">
+                    <i class="bi bi-reply"></i>
+                </button>
+                <button class="message-action-btn" onclick="pinMessage(${message.id})" title="Pin">
+                    <i class="bi bi-pin"></i>
+                </button>
+            </div>
+            
+            ${selfDestructHtml}
+            ${replyHtml}
+            
+            <div class="message-header d-flex justify-content-between align-items-center">
+                <span class="message-sender">${message.sender}</span>
+                ${showTime}
+            </div>
+            
+            ${displayText ? `<div class="message-text">${formatMessageText(displayText)}</div>` : ''}
+            ${mediaHtml}
+            ${reactionsHtml}
+            
+            <div class="reaction-picker" id="reactionPicker-${message.id}">
+                ${REACTIONS.map(emoji => 
+                    `<div class="reaction-emoji" onclick="addReaction(${message.id}, '${emoji}')">${emoji}</div>`
+                ).join('')}
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(messageDiv);
+    
+    if (!message.isOwn && settings.soundNotifications && !message.isTemp && message.type !== 'audio') {
+        playMessageSound();
+    }
+    
+    if (settings.autoScroll) {
+        scrollToBottom();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     function createReactionsHtml(messageId, reactions) {
         let html = '<div class="message-reactions">';
@@ -2363,41 +2586,60 @@ document.body.classList.remove('modal-open');
         modal.show();
     }
 
-    // Voice Recording Functions
-    async function startRecording() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
-            
-            mediaRecorder.ondataavailable = event => {
-                audioChunks.push(event.data);
-            };
-            
-            mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                sendVoiceMessage(audioBlob);
-                stream.getTracks().forEach(track => track.stop());
-            };
-            
-            mediaRecorder.start();
-            document.getElementById('voiceRecorder').classList.add('active');
-            startRecordingTimer();
-            updateVoiceVisualizer();
-            
-        } catch (error) {
-            console.error('Error starting recording:', error);
-            showToast('Microphone access denied', 'error');
-        }
-    }
 
-    function stopRecording() {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-            document.getElementById('voiceRecorder').classList.remove('active');
-            stopRecordingTimer();
-        }
+
+
+
+
+
+async function startRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = []; // Очищаем chunks при начале записи
+        
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            sendVoiceMessage(audioBlob);
+            stream.getTracks().forEach(track => track.stop());
+            isRecording = false; // Сбрасываем флаг
+        };
+        
+        mediaRecorder.start();
+        isRecording = true; // Устанавливаем флаг
+        document.getElementById('voiceRecorder').classList.add('active');
+        startRecordingTimer();
+        updateVoiceVisualizer();
+        
+    } catch (error) {
+        console.error('Error starting recording:', error);
+        showToast('Microphone access denied', 'error');
+        isRecording = false;
     }
+}
+
+
+
+
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        document.getElementById('voiceRecorder').classList.remove('active');
+        stopRecordingTimer();
+    }
+}
+
+
+
+
+
 
     function startRecordingTimer() {
         recordingStartTime = Date.now();
@@ -2439,21 +2681,75 @@ document.body.classList.remove('modal-open');
         }
     }
 
-    function sendVoiceMessage(audioBlob) {
-        // Voice messages are stored locally only in this demo
-        const message = {
-            id: Date.now(),
-            sender: currentUsername,
+
+
+
+
+
+
+
+
+
+
+
+
+function sendVoiceMessage(audioBlob) {
+    // Проверяем что есть что отправлять
+    if (audioBlob.size === 0) {
+        showToast('No audio recorded', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const audioBase64 = e.target.result;
+        
+        // Добавляем ТОЛЬКО ОДНО сообщение в очередь
+        const messageData = {
             text: '🎤 Voice message',
-            timestamp: new Date().toLocaleTimeString(),
-            voiceMessage: URL.createObjectURL(audioBlob),
-            isOwn: true
+            audio: audioBase64,
+            timestamp: Date.now(),
+            type: 'audio'
         };
         
-        addMessageToChat(message);
-        scrollToBottom();
-        showToast('Voice message sent (local only)', 'info');
-    }
+        // Проверяем нет ли уже аудио в очереди
+        const hasAudioInQueue = messageQueue.some(msg => msg.type === 'audio');
+        if (!hasAudioInQueue) {
+            messageQueue.push(messageData);
+            
+            // Показываем временное сообщение
+            const tempId = 'temp_' + Date.now();
+            addMessageToChat({
+                id: tempId,
+                sender: currentUsername,
+                text: 'Voice message',
+                timestamp: new Date().toLocaleTimeString(),
+                audio: URL.createObjectURL(audioBlob),
+                isOwn: true,
+                isTemp: true,
+                type: 'audio'
+            });
+
+            // Отправляем на сервер
+            await processMessageQueue();
+            showToast('Voice message sent', 'success');
+        } else {
+            showToast('Audio message is already sending', 'warning');
+        }
+        
+        // Очищаем chunks после отправки
+        audioChunks = [];
+    };
+    reader.onerror = function() {
+        showToast('Error processing audio', 'error');
+        audioChunks = []; // Очищаем chunks при ошибке
+    };
+    reader.readAsDataURL(audioBlob);
+}
+
+
+
+
 
     // Message Actions
     function replyToMessage(messageId) {
@@ -2548,7 +2844,6 @@ document.body.classList.remove('modal-open');
     function addTemplate() {
         const newTemplateInput = document.getElementById('newTemplate');
         const template = newTemplateInput.value.trim();
-        
         if (template && !messageTemplates.includes(template)) {
             messageTemplates.push(template);
             updateTemplatesList();
