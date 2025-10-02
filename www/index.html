@@ -824,6 +824,34 @@
 
         /* Mobile Optimizations */
         @media (max-width: 768px) {
+
+
+
+             .input-area {
+        padding: 10px;
+    }
+    
+    .file-upload-btn {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .message-input {
+        font-size: 16px; /* Убирает зум в iOS */
+    }
+    
+    .dropdown-menu {
+        min-width: 200px;
+    }
+    
+    .templates-container {
+        max-height: 120px;
+        overflow-y: auto;
+    }
+
             .sidebar, .users-sidebar {
                 position: fixed;
                 top: 0;
@@ -1004,6 +1032,7 @@
 .message-audio-container {
     margin-top: 8px;
 }
+
 
     </style>
 </head>
@@ -1377,81 +1406,122 @@
                 </div>
 
                 <!-- Input Area -->
-                <div class="input-area">
-                    <!-- Reply Preview -->
-                    <div class="reply-preview d-none" id="replyPreview">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <div class="reply-sender" id="replySender"></div>
-                                <div class="reply-text" id="replyText"></div>
-                            </div>
-                            <button type="button" class="btn-close btn-close-white" onclick="cancelReply()"></button>
-                        </div>
-                    </div>
+                <!-- Input Area -->
+<div class="input-area">
+    <!-- Reply Preview -->
+    <div class="reply-preview d-none" id="replyPreview">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="reply-sender" id="replySender"></div>
+                <div class="reply-text" id="replyText"></div>
+            </div>
+            <button type="button" class="btn-close btn-close-white" onclick="cancelReply()"></button>
+        </div>
+    </div>
 
-                    <!-- Image Preview -->
-                    <div class="image-preview d-none" id="imagePreview">
-                        <img id="previewImage" src="" alt="Preview">
-                        <button class="image-remove" onclick="removeImage()">×</button>
-                    </div>
+    <!-- Image Preview -->
+    <div class="image-preview d-none" id="imagePreview">
+        <img id="previewImage" src="" alt="Preview">
+        <button class="image-remove" onclick="removeImage()">×</button>
+    </div>
 
-                    <!-- Drag & Drop Zone -->
-                    <div class="drop-zone d-none" id="dropZone">
-                        <p><i class="bi bi-cloud-arrow-up fs-1"></i></p>
-                        <p>Drop images here to upload</p>
-                    </div>
+    <!-- Drag & Drop Zone -->
+    <div class="drop-zone d-none" id="dropZone">
+        <p><i class="bi bi-cloud-arrow-up fs-1"></i></p>
+        <p>Drop images here to upload</p>
+    </div>
 
-                    <!-- Quick Templates -->
-                    <div class="templates-container" id="templatesContainer">
-                        <div class="template-item" onclick="useTemplate('Hello! 👋')">Hello! 👋</div>
-                        <div class="template-item" onclick="useTemplate('I\'ll be right back')">I'll be right back</div>
-                        <div class="template-item" onclick="useTemplate('Thanks! 🙏')">Thanks! 🙏</div>
-                        <div class="template-item" onclick="useTemplate('Let me check and get back to you')">Let me check and get back to you</div>
-                        <div class="template-item" onclick="useTemplate('Great job! 🎉')">Great job! 🎉</div>
-                    </div>
+    <!-- Quick Templates -->
+    <div class="templates-container" id="templatesContainer">
+        <div class="template-item" onclick="useTemplate('Hello! 👋')">Hello! 👋</div>
+        <div class="template-item" onclick="useTemplate('I\'ll be right back')">I'll be right back</div>
+        <div class="template-item" onclick="useTemplate('Thanks! 🙏')">Thanks! 🙏</div>
+        <div class="template-item" onclick="useTemplate('Let me check and get back to you')">Let me check and get back to you</div>
+        <div class="template-item" onclick="useTemplate('Great job! 🎉')">Great job! 🎉</div>
+    </div>
 
-                    <div class="d-flex gap-2 align-items-end">
-                        <button class="file-upload-btn" onclick="document.getElementById('fileInput').click()" title="Attach Image">
-                            <i class="bi bi-image fs-5"></i>
-                        </button>
-                        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
-                        
-                        <button class="file-upload-btn" onclick="toggleEmojiPicker()" title="Add Emoji">
-                            <i class="bi bi-emoji-smile fs-5"></i>
-                        </button>
+    <div class="d-flex gap-2 align-items-end">
+        <!-- Mobile Menu Button (только для мобильных) -->
+        <div class="dropdown d-md-none">
+            <button class="file-upload-btn dropdown-toggle" type="button" id="mobileActionsMenu" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                <i class="bi bi-three-dots fs-5"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="mobileActionsMenu">
+                <li>
+                    <a class="dropdown-item" href="#" onclick="document.getElementById('fileInput').click(); return false;">
+                        <i class="bi bi-image me-2"></i>Attach Image
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="toggleEmojiPicker(); return false;">
+                        <i class="bi bi-emoji-smile me-2"></i>Add Emoji
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="showTemplates(); return false;">
+                        <i class="bi bi-chat-quote me-2"></i>Quick Templates
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" 
+                       onmousedown="startRecording()" onmouseup="stopRecording()"
+                       ontouchstart="event.preventDefault(); startRecording()" ontouchend="stopRecording()">
+                        <i class="bi bi-mic me-2"></i>Voice Message
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="sendSelfDestructMessage(); return false;">
+                        <i class="bi bi-clock me-2"></i>Self-destruct
+                    </a>
+                </li>
+            </ul>
+        </div>
 
-                        <button class="file-upload-btn" onclick="showTemplates()" title="Quick Templates">
-                            <i class="bi bi-chat-quote fs-5"></i>
-                        </button>
+        <!-- Десктопные кнопки (только для больших экранов) -->
+        <div class="d-none d-md-flex gap-2 align-items-end">
+            <button class="file-upload-btn" onclick="document.getElementById('fileInput').click()" title="Attach Image">
+                <i class="bi bi-image fs-5"></i>
+            </button>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+            
+            <button class="file-upload-btn" onclick="toggleEmojiPicker()" title="Add Emoji">
+                <i class="bi bi-emoji-smile fs-5"></i>
+            </button>
 
-                        <button class="file-upload-btn" id="voiceRecordBtn" 
-                                onmousedown="startRecording()" onmouseup="stopRecording()"
-                                ontouchstart="startRecording()" ontouchend="stopRecording()"
-                                title="Hold to record voice message">
-                            <i class="bi bi-mic fs-5"></i>
-                        </button>
+            <button class="file-upload-btn" onclick="showTemplates()" title="Quick Templates">
+                <i class="bi bi-chat-quote fs-5"></i>
+            </button>
 
-                        <div class="flex-grow-1 position-relative">
-                            <textarea class="form-control message-input" id="messageInput" 
-                                      rows="1" placeholder="Type a message..." 
-                                      onkeydown="handleKeydown(event)"></textarea>
-                            
-                            <!-- Emoji Picker -->
-                            <div class="emoji-picker-container" id="emojiPickerContainer">
-                                <!-- Emojis will be populated by JavaScript -->
-                            </div>
-                        </div>
+            <button class="file-upload-btn" id="voiceRecordBtn" 
+                    onmousedown="startRecording()" onmouseup="stopRecording()"
+                    ontouchstart="startRecording()" ontouchend="stopRecording()"
+                    title="Hold to record voice message">
+                <i class="bi bi-mic fs-5"></i>
+            </button>
+        </div>
 
-                        <div class="btn-group">
-                            <button class="btn btn-outline-secondary" onclick="sendSelfDestructMessage()" title="Self-destructing message">
-                                <i class="bi bi-clock"></i>
-                            </button>
-                            <button class="btn btn-send text-white" onclick="sendMessage()">
-                                <i class="bi bi-send-fill"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <div class="flex-grow-1 position-relative">
+            <textarea class="form-control message-input" id="messageInput" 
+                      rows="1" placeholder="Type a message..." 
+                      onkeydown="handleKeydown(event)"></textarea>
+            
+            <!-- Emoji Picker -->
+            <div class="emoji-picker-container" id="emojiPickerContainer">
+                <!-- Emojis will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary d-none d-md-block" onclick="sendSelfDestructMessage()" title="Self-destructing message">
+                <i class="bi bi-clock"></i>
+            </button>
+            <button class="btn btn-send text-white" onclick="sendMessage()">
+                <i class="bi bi-send-fill"></i>
+            </button>
+        </div>
+    </div>
+</div>
+             
             </div>
 
             <!-- Users Sidebar -->
