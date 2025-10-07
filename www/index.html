@@ -1367,6 +1367,21 @@
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* 🔐 Стили для секции загрузки ключа */
+#keyUploadSection {
+    transition: all 0.3s ease;
+    border-left: 3px solid var(--accent-blue);
+    padding-left: 15px;
+    background: rgba(66, 133, 244, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+#keyUploadSection label {
+    color: var(--accent-blue);
+    font-weight: 600;
+}
+
     </style>
 </head>
 <body>
@@ -1400,52 +1415,79 @@
                     
                     <div class="tab-content">
                         <!-- Create Room Tab -->
-                        <div class="tab-pane fade show active" id="create" role="tabpanel">
-                            <form id="createRoomForm">
-                                <div class="mb-3">
-                                    <label class="form-label">Display Name</label>
-                                    <input type="text" class="form-control bg-dark border-dark text-light" 
-                                           id="createUsername" value="User1" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Room Name</label>
-                                    <input type="text" class="form-control bg-dark border-dark text-light" 
-                                           id="roomName" placeholder="My Secure Room" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Room Password (optional)</label>
-                                    <input type="password" class="form-control bg-dark border-dark text-light" 
-                                           id="roomPassword" placeholder="Leave empty for public room">
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                                    <i class="bi bi-plus-circle me-2"></i>Create Room
-                                </button>
-                            </form>
-                        </div>
+<!-- Create Room Tab -->
+<div class="tab-pane fade show active" id="create" role="tabpanel">
+    <form id="createRoomForm">
+        <div class="mb-3">
+            <label class="form-label">Display Name</label>
+            <input type="text" class="form-control bg-dark border-dark text-light" 
+                   id="createUsername" value="User1" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Room Name</label>
+            <input type="text" class="form-control bg-dark border-dark text-light" 
+                   id="roomName" placeholder="My Secure Room" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Room Password (optional)</label>
+            <input type="password" class="form-control bg-dark border-dark text-light" 
+                   id="roomPassword" placeholder="Leave empty for public room">
+        </div>
+        
+        <!-- 🔐 НОВЫЙ БЛОК: Опция шифрования -->
+        <div class="mb-3">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="enableEncryption">
+                <label class="form-check-label" for="enableEncryption">
+                    <strong>🔐 Enable End-to-End Encryption</strong>
+                </label>
+            </div>
+            <small class="text-muted">
+                Recommended for confidential conversations. You'll download a key file to decrypt messages.
+            </small>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+            <i class="bi bi-plus-circle me-2"></i>Create Room
+        </button>
+    </form>
+</div>
                         
                         <!-- Join Room Tab -->
-                        <div class="tab-pane fade" id="join" role="tabpanel">
-                            <form id="joinRoomForm">
-                                <div class="mb-3">
-                                    <label class="form-label">Display Name</label>
-                                    <input type="text" class="form-control bg-dark border-dark text-light" 
-                                           id="joinUsername" value="User2" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Room ID</label>
-                                    <input type="text" class="form-control bg-dark border-dark text-light" 
-                                           id="roomId" placeholder="Enter room code" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Room Password</label>
-                                    <input type="password" class="form-control bg-dark border-dark text-light" 
-                                           id="joinPassword" placeholder="Enter password if required">
-                                </div>
-                                <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i>Join Room
-                                </button>
-                            </form>
-                        </div>
+<div class="tab-pane fade" id="join" role="tabpanel">
+    <form id="joinRoomForm">
+        <div class="mb-3">
+            <label class="form-label">Display Name</label>
+            <input type="text" class="form-control bg-dark border-dark text-light" 
+                   id="joinUsername" value="User2" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Room ID</label>
+            <input type="text" class="form-control bg-dark border-dark text-light" 
+                   id="roomId" placeholder="Enter room code" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Room Password</label>
+            <input type="password" class="form-control bg-dark border-dark text-light" 
+                   id="joinPassword" placeholder="Enter password if required">
+        </div>
+        
+        <!-- 🔐 НОВЫЙ БЛОК: Загрузка ключа для зашифрованных комнат -->
+<div class="mb-3" id="keyUploadSection" style="display: none;">
+    <label class="form-label">Private Key File (required for encrypted rooms)</label>
+    <input type="file" class="form-control bg-dark border-dark text-light" 
+           id="privateKeyFile" accept=".key">
+    <small class="text-muted">
+        Upload the .key file you received when the room was created
+    </small>
+</div>
+        
+        <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Join Room
+        </button>
+    </form>
+</div>
+                        
                     </div>
                 </div>
             </div>
@@ -1890,42 +1932,48 @@
     // Reaction emojis
     const REACTIONS = ['👍', '❤️', '😂', '🎉', '😮', '😢'];
 
-    // Global variables
-    let isRecording = false; 
-    let audioMessages = {}; 
-    let lastMessageId = 0;
-    let currentUsername = 'User1';
-    let currentStatus = 'online';
-    let selectedImage = null;
-    let imageMessages = {};
-    let currentReplyMessage = null;
-    let pinnedMessage = null;
-    let voiceRecorder = null;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let recordingTimer = null;
-    let recordingStartTime = null;
-    let currentTheme = 'dark';
-    let currentFontSize = 'md';
-    let messageReactions = {};
-    let selfDestructMessages = new Set();
-    let messageTemplates = [
-        "Hello! 👋",
-        "I'll be right back",
-        "Thanks! 🙏",
-        "Let me check and get back to you",
-        "Great job! 🎉"
-    ];
-    let settings = {
-        soundNotifications: true,
-        messageTimestamps: true,
-        autoScroll: true,
-        browserNotifications: true
-    };
+   // Global variables
+let isRecording = false; 
+let audioMessages = {}; 
+let lastMessageId = 0;
+let currentUsername = 'User1';
+let currentStatus = 'online';
+let selectedImage = null;
+let imageMessages = {};
+let currentReplyMessage = null;
+let pinnedMessage = null;
+let voiceRecorder = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingTimer = null;
+let recordingStartTime = null;
+let currentTheme = 'dark';
+let currentFontSize = 'md';
+let messageReactions = {};
+let selfDestructMessages = new Set();
+let messageTemplates = [
+    "Hello! 👋",
+    "I'll be right back",
+    "Thanks! 🙏", 
+    "Let me check and get back to you",
+    "Great job! 🎉"
+];
+let settings = {
+    soundNotifications: true,
+    messageTimestamps: true,
+    autoScroll: true,
+    browserNotifications: true
+};
 
-    // Room management variables
-    let currentRoom = null;
-    let currentRoomId = null;
+// Room management variables
+let currentRoom = null;
+let currentRoomId = null;
+
+// 🔐 Новые переменные для шифрования
+let currentPrivateKey = ''; // 🔐 Приватный ключ текущего пользователя
+
+// 🔐 Новые переменные для шифрования
+let rooms = {}; // {room_id: {is_encrypted: bool, public_key: string}}
 
     // Message queue for better mobile performance
     let messageQueue = [];
@@ -2003,7 +2051,206 @@
         if ('Notification' in window) {
             Notification.requestPermission();
         }
+
+
+            document.getElementById('join-tab').addEventListener('click', function() {
+        const keyUploadSection = document.getElementById('keyUploadSection');
+        keyUploadSection.style.display = 'none';
+        document.getElementById('privateKeyFile').value = ''; // Очищаем выбранный файл
+    });
+
+    document.getElementById('create-tab').addEventListener('click', function() {
+        const keyUploadSection = document.getElementById('keyUploadSection');
+        keyUploadSection.style.display = 'none';
+    });
+
+
+            document.getElementById('roomId').addEventListener('input', function(e) {
+        const roomId = e.target.value.trim();
+        const keyUploadSection = document.getElementById('keyUploadSection');
+        
+        if (roomId.length >= 8) { // ID комнаты обычно 8+ символов
+            // Ждем немного чтобы пользователь закончил ввод
+            clearTimeout(window.roomCheckTimeout);
+            window.roomCheckTimeout = setTimeout(() => {
+                checkRoomEncryptionStatus(roomId);
+            }, 500);
+        } else {
+            keyUploadSection.style.display = 'none';
+        }
+    });
+
+            document.getElementById('enableEncryption').addEventListener('change', function(e) {
+        const encryptionInfo = document.getElementById('encryptionInfo');
+        if (e.target.checked && !encryptionInfo) {
+            // Показываем информацию о шифровании
+            const infoDiv = document.createElement('div');
+            infoDiv.id = 'encryptionInfo';
+            infoDiv.className = 'alert alert-info mt-2';
+            infoDiv.innerHTML = `
+                <small>
+                    <i class="bi bi-shield-check me-1"></i>
+                    <strong>End-to-End Encryption Enabled</strong><br>
+                    You'll download a key file after creating the room. 
+                    Keep it safe - it's required to read messages!
+                </small>
+            `;
+            e.target.closest('.mb-3').appendChild(infoDiv);
+        } else if (!e.target.checked && encryptionInfo) {
+            encryptionInfo.remove();
+        }
+    });
+
     }
+
+    // 🔐 Функция проверки типа комнаты
+
+
+async function generateEncryptionKeys() {
+    try {
+        // Генерируем пару ключей
+        const keyPair = await window.crypto.subtle.generateKey(
+            {
+                name: "RSA-OAEP",
+                modulusLength: 2048,
+                publicExponent: new Uint8Array([1, 0, 1]),
+                hash: "SHA-256",
+            },
+            true, // extractable
+            ["encrypt", "decrypt"]
+        );
+
+        // Экспортируем публичный ключ
+        const publicKey = await window.crypto.subtle.exportKey(
+            "spki",
+            keyPair.publicKey
+        );
+
+        // Экспортируем приватный ключ
+        const privateKey = await window.crypto.subtle.exportKey(
+            "pkcs8",
+            keyPair.privateKey
+        );
+
+        // Конвертируем в Base64 для хранения
+        const publicKeyBase64 = arrayBufferToBase64(publicKey);
+        const privateKeyBase64 = arrayBufferToBase64(privateKey);
+
+        console.log("🔐 Encryption keys generated successfully");
+        
+        return {
+            publicKey: publicKeyBase64,
+            privateKey: privateKeyBase64
+        };
+    } catch (error) {
+        console.error("❌ Error generating encryption keys:", error);
+        showToast("Failed to generate encryption keys", "error");
+        throw error;
+    }
+}
+
+// Скачивание приватного ключа
+function downloadPrivateKey(privateKeyBase64, roomId) {
+    try {
+        // Создаем blob с приватным ключом
+        const blob = new Blob([privateKeyBase64], { 
+            type: 'application/octet-stream' 
+        });
+        const url = URL.createObjectURL(blob);
+        
+        // Создаем ссылку для скачивания
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `securecomm_${roomId}_private.key`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Очищаем URL
+        URL.revokeObjectURL(url);
+        
+        console.log("🔐 Private key downloaded for room:", roomId);
+        showToast("🔐 Private key downloaded - keep it safe!", "success");
+    } catch (error) {
+        console.error("❌ Error downloading private key:", error);
+        showToast("Failed to download private key", "error");
+    }
+}
+
+// Вспомогательная функция для конвертации ArrayBuffer в Base64
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+// Вспомогательная функция для конвертации Base64 в ArrayBuffer
+function base64ToArrayBuffer(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+}
+
+// Загрузка приватного ключа из файла
+function loadPrivateKeyFromFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const keyData = e.target.result;
+                // Проверяем базовую валидность ключа
+                if (!keyData || keyData.length < 100) {
+                    reject(new Error("Invalid key file"));
+                    return;
+                }
+                resolve(keyData);
+            } catch (error) {
+                reject(error);
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+    });
+}
+
+
+// 🔐 Функция проверки типа комнаты
+async function checkRoomEncryptionStatus(roomId) {
+    try {
+        console.log(`🔐 Checking encryption status for room: ${roomId}`);
+        
+        const response = await fetch(`${SERVER_URL}/room_encryption_info?room_id=${roomId}`);
+        
+        if (response.ok) {
+            const roomInfo = await response.json();
+            const keyUploadSection = document.getElementById('keyUploadSection');
+            
+            console.log(`🔐 Room ${roomId} encryption: ${roomInfo.is_encrypted}`);
+            
+            if (roomInfo.is_encrypted) {
+                keyUploadSection.style.display = 'block';
+                showToast('🔐 This room uses end-to-end encryption. Key file required.', 'info');
+            } else {
+                keyUploadSection.style.display = 'none';
+            }
+        } else {
+            // Если комната не найдена или другая ошибка
+            const keyUploadSection = document.getElementById('keyUploadSection');
+            keyUploadSection.style.display = 'none';
+        }
+    } catch (error) {
+        console.log('Room check error:', error);
+        // В случае ошибки скрываем поле загрузки ключа
+        const keyUploadSection = document.getElementById('keyUploadSection');
+        keyUploadSection.style.display = 'none';
+    }
+}
 
     function createParallaxEffect() {
         const layer = document.getElementById('parallaxLayer');
@@ -2030,126 +2277,224 @@
         document.head.appendChild(style);
     }
 
-    async function handleCreateRoom(e) {
-        e.preventDefault();
+    // 🔐 Функция для получения информации о комнате
+async function getRoomInfo() {
+    try {
+        const response = await fetch(`${SERVER_URL}/room_encryption_info?room_id=${currentRoomId}`);
+        if (response.ok) {
+            const roomInfo = await response.json();
+            rooms[currentRoomId] = {
+                is_encrypted: roomInfo.is_encrypted,
+                public_key: roomInfo.public_key || ''
+            };
+            console.log(`🔐 Room info loaded: encrypted=${roomInfo.is_encrypted}, has_key=${!!roomInfo.public_key}`);
+            return true;
+        }
+    } catch (error) {
+        console.error('Error getting room info:', error);
+    }
+    return false;
+}
+
+async function handleCreateRoom(e) {
+    e.preventDefault();
+    
+    currentUsername = document.getElementById('createUsername').value || 'User1';
+    const roomName = document.getElementById('roomName').value || 'My Secure Room';
+    const password = document.getElementById('roomPassword').value;
+    const enableEncryption = document.getElementById('enableEncryption').checked;
+    
+    console.log(`🔐 Creating room with encryption: ${enableEncryption}`);
+    
+    try {
+        // 🔐 Генерируем ключи если включено шифрование
+        let publicKey = '';
+        let privateKey = '';
         
-        currentUsername = document.getElementById('createUsername').value || 'User1';
-        const roomName = document.getElementById('roomName').value || 'My Secure Room';
-        const password = document.getElementById('roomPassword').value;
+        if (enableEncryption) {
+            showToast('🔐 Generating encryption keys...', 'info');
+            const keys = await generateEncryptionKeys();
+            publicKey = keys.publicKey;
+            privateKey = keys.privateKey;
+            currentPrivateKey = privateKey; // 🔐 СОХРАНЯЕМ ПРИВАТНЫЙ КЛЮЧ ДЛЯ СОЗДАТЕЛЯ
+            console.log('🔐 Keys generated and saved for creator');
+        }
         
-        try {
-            const response = await fetch(SERVER_URL + '/create_room', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: currentUsername,
-                    room_name: roomName,
-                    password: password
-                })
-            });
+        const response = await fetch(SERVER_URL + '/create_room', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: currentUsername,
+                room_name: roomName,
+                password: password,
+                is_encrypted: enableEncryption,
+                public_key: publicKey
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            currentRoom = result.room_name;
+            currentRoomId = result.room_id;
             
-            const result = await response.json();
+            console.log(`🔐 Room created: ${currentRoomId}, Encrypted: ${result.is_encrypted}`);
             
-            if (response.ok) {
-                currentRoom = result.room_name;
-                currentRoomId = result.room_id;
-                
-                // Show room created modal
-                document.getElementById('roomCodeDisplay').textContent = currentRoomId;
-                generateQRCode(currentRoomId);
-                
-                bootstrap.Modal.getInstance(document.getElementById('roomModal')).hide();
-                const createdModal = new bootstrap.Modal(document.getElementById('roomCreatedModal'));
-                createdModal.show();
-                
-            } else {
-                showToast(`Failed to create room: ${result.error}`, 'error');
+            // 🔐 Скачиваем приватный ключ если комната зашифрована
+            if (enableEncryption && privateKey) {
+                downloadPrivateKey(privateKey, currentRoomId);
+                showToast('🔐 Private key saved and downloaded', 'success');
             }
             
-        } catch (error) {
-            console.error('Create room error:', error);
-            showToast('Connection error - failed to create room', 'error');
+            // Показываем room created modal
+            document.getElementById('roomCodeDisplay').textContent = currentRoomId;
+            generateQRCode(currentRoomId);
+            
+            bootstrap.Modal.getInstance(document.getElementById('roomModal')).hide();
+            const createdModal = new bootstrap.Modal(document.getElementById('roomCreatedModal'));
+            createdModal.show();
+            
+        } else {
+            showToast(`Failed to create room: ${result.error}`, 'error');
         }
+        
+    } catch (error) {
+        console.error('Create room error:', error);
+        showToast('Connection error - failed to create room', 'error');
     }
+}
 
-    async function handleJoinRoom(e) {
-        e.preventDefault();
+async function handleJoinRoom(e) {
+    e.preventDefault();
+    
+    currentUsername = document.getElementById('joinUsername').value || 'User2';
+    const roomId = document.getElementById('roomId').value;
+    const password = document.getElementById('joinPassword').value;
+    const privateKeyFile = document.getElementById('privateKeyFile').files[0];
+    
+    try {
+        let keyVerificationData = null;
+        let userPublicKey = '';
         
-        currentUsername = document.getElementById('joinUsername').value || 'User2';
-        const roomId = document.getElementById('roomId').value;
-        const password = document.getElementById('joinPassword').value;
+        // 🔐 Если загружен ключевой файл - читаем его
+        if (privateKeyFile) {
+            showToast('🔐 Verifying encryption key...', 'info');
+            const privateKey = await loadPrivateKeyFromFile(privateKeyFile);
+            currentPrivateKey = privateKey; // 🔐 Сохраняем приватный ключ
+            
+            // Здесь можно добавить более сложную проверку ключа
+            keyVerificationData = 'key_verification_' + Date.now();
+            userPublicKey = privateKey; // В реальной системе это должен быть публичный ключ
+        }
         
-        try {
-            const response = await fetch(SERVER_URL + '/join_room', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: currentUsername,
-                    room_id: roomId,
-                    password: password
-                })
-            });
+        const response = await fetch(SERVER_URL + '/join_room', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: currentUsername,
+                room_id: roomId,
+                password: password,
+                key_verification: keyVerificationData,
+                public_key: userPublicKey
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            currentRoom = result.room_name;
+            currentRoomId = roomId;
             
-            const result = await response.json();
+            // Enter room directly
+            setTimeout(() => {
+                enterRoom();
+            }, 100);
             
-            if (response.ok) {
-                currentRoom = result.room_name;
-                currentRoomId = roomId;
-                
-                // Enter room directly
-setTimeout(() => {
-    enterRoom();
-}, 100);			                
+        } else {
+            if (result.is_encrypted && result.key_required) {
+                showToast('🔐 This room requires an encryption key file', 'error');
+                document.getElementById('keyUploadSection').style.display = 'block';
             } else {
                 showToast(`Failed to join room: ${result.error}`, 'error');
             }
-            
-        } catch (error) {
-            console.error('Join room error:', error);
-            showToast('Connection error - failed to join room', 'error');
         }
+        
+    } catch (error) {
+        console.error('Join room error:', error);
+        showToast('Connection error - failed to join room', 'error');
     }
-
-    function enterRoom() {
-        // Hide modals, show app
+}
 
 
-// Hide modals, show app
-const roomCreatedModal = bootstrap.Modal.getInstance(document.getElementById('roomCreatedModal'));
-const roomModal = bootstrap.Modal.getInstance(document.getElementById('roomModal'));
 
-if (roomCreatedModal) roomCreatedModal.hide();
-if (roomModal) roomModal.hide();
+async function enterRoom() {
+    // Hide modals, show app
+    const roomCreatedModal = bootstrap.Modal.getInstance(document.getElementById('roomCreatedModal'));
+    const roomModal = bootstrap.Modal.getInstance(document.getElementById('roomModal'));
 
-// Альтернативный способ скрытия модальных окон
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.classList.remove('show');
-    modal.style.display = 'none';
-});
-document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-    backdrop.remove();
-});
-document.body.classList.remove('modal-open');
+    if (roomCreatedModal) roomCreatedModal.hide();
+    if (roomModal) roomModal.hide();
 
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    });
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.remove();
+    });
+    document.body.classList.remove('modal-open');
 
-        document.getElementById('appContainer').classList.remove('d-none');
-        
-        // Update UI with room info
-        document.getElementById('currentUsername').textContent = currentUsername;
-        document.getElementById('userAvatar').textContent = currentUsername.charAt(0).toUpperCase();
-        document.getElementById('roomNameDisplay').textContent = currentRoom;
-        document.getElementById('roomInfo').textContent = `Room: ${currentRoomId}`;
-        
-        // Add welcome message
-        addSystemMessage(`Welcome to "${currentRoom}"! Secure room session started.`);
-        
-        // Start server communication
-        initializeServerCommunication();
+    document.getElementById('appContainer').classList.remove('d-none');
+    
+    // Update UI with room info
+    document.getElementById('currentUsername').textContent = currentUsername;
+    document.getElementById('userAvatar').textContent = currentUsername.charAt(0).toUpperCase();
+    document.getElementById('roomNameDisplay').textContent = currentRoom;
+    document.getElementById('roomInfo').textContent = `Room: ${currentRoomId}`;
+    
+    // 🔐 Получаем информацию о комнате перед началом работы
+  showToast('🔄 Loading room information...', 'info');
+    
+    // Временно устанавливаем комнату как незашифрованную
+    rooms[currentRoomId] = {
+        is_encrypted: false,
+        public_key: ''
+    };
+    
+    // Получаем актуальную информацию о комнате
+    const roomInfoLoaded = await getRoomInfo();
+    
+    if (roomInfoLoaded) {
+        if (rooms[currentRoomId].is_encrypted) {
+            if (currentPrivateKey) {
+                showToast('🔐 End-to-end encrypted room loaded with key', 'success');
+                document.getElementById('chatStatus').innerHTML = 
+                    `<span id="roomInfo">Room: ${currentRoomId}</span> • 🔐 Encrypted (key available)`;
+            } else {
+                showToast('🔐 Encrypted room - key required to read messages', 'warning');
+                document.getElementById('chatStatus').innerHTML = 
+                    `<span id="roomInfo">Room: ${currentRoomId}</span> • 🔐 Encrypted (no key)`;
+            }
+        } else {
+            showToast('🔓 Standard room loaded', 'success');
+        }
+    } else {
+        showToast('⚠️ Could not load room security info', 'warning');
     }
+    
+    // Add welcome message
+    addSystemMessage(`Welcome to "${currentRoom}"! Secure room session started.`);
+    
+    // Start server communication
+    initializeServerCommunication();
+}
+
+
+
 
     function generateQRCode(roomId) {
         const canvas = document.getElementById('qrCodeCanvas');
@@ -2317,13 +2662,100 @@ function initializeServerCommunication() {
 
 
 
+// 🔐 Шифрование сообщения
+async function encryptMessage(message, publicKeyBase64) {
+    try {
+        // Конвертируем Base64 ключ обратно в ArrayBuffer
+        const publicKeyBuffer = base64ToArrayBuffer(publicKeyBase64);
+        
+        // Импортируем публичный ключ
+        const publicKey = await window.crypto.subtle.importKey(
+            "spki",
+            publicKeyBuffer,
+            {
+                name: "RSA-OAEP",
+                hash: "SHA-256"
+            },
+            false,
+            ["encrypt"]
+        );
+
+        // Шифруем сообщение
+        const encodedMessage = new TextEncoder().encode(message);
+        const encryptedData = await window.crypto.subtle.encrypt(
+            {
+                name: "RSA-OAEP"
+            },
+            publicKey,
+            encodedMessage
+        );
+
+        // Конвертируем результат в Base64
+        const encryptedContent = arrayBufferToBase64(encryptedData);
+        
+        console.log("🔐 Message encrypted successfully");
+        
+        return {
+            encrypted_content: encryptedContent,
+            encrypted_key: '', // В гибридной схеме это будет симметричный ключ
+            iv: '' // Для AES
+        };
+        
+    } catch (error) {
+        console.error("❌ Encryption error:", error);
+        throw new Error("Failed to encrypt message");
+    }
+}
 
 
 
 
+// 🔐 Функция дешифрования сообщения
+async function decryptMessage(encryptedData, encryptionMetadata, privateKeyBase64) {
+    try {
+        console.log('🔐 Starting decryption...');
+        
+        // Конвертируем приватный ключ из Base64 в ArrayBuffer
+        const privateKeyBuffer = base64ToArrayBuffer(privateKeyBase64);
+        
+        // Импортируем приватный ключ
+        const privateKey = await window.crypto.subtle.importKey(
+            "pkcs8",
+            privateKeyBuffer,
+            {
+                name: "RSA-OAEP",
+                hash: "SHA-256"
+            },
+            false,
+            ["decrypt"]
+        );
+
+        // Конвертируем зашифрованные данные из Base64 в ArrayBuffer
+        const encryptedBuffer = base64ToArrayBuffer(encryptedData);
+        
+        // Дешифруем сообщение
+        const decryptedBuffer = await window.crypto.subtle.decrypt(
+            {
+                name: "RSA-OAEP"
+            },
+            privateKey,
+            encryptedBuffer
+        );
+
+        // Конвертируем результат в текст
+        const decryptedText = new TextDecoder().decode(decryptedBuffer);
+        
+        console.log('🔐 Message decrypted successfully');
+        return decryptedText;
+        
+    } catch (error) {
+        console.error('❌ Decryption error:', error);
+        throw new Error('Failed to decrypt message');
+    }
+}
 
 
-    async function sendMessageToServer(selfDestruct = false) {
+async function sendMessageToServer(selfDestruct = false) {
     const input = document.getElementById('messageInput');
     const text = input.value.trim();
     
@@ -2333,28 +2765,74 @@ function initializeServerCommunication() {
     
     if (!hasText && !hasImage && !hasAudio) return;
 
+    // 🔐 Безопасная проверка типа комнаты
+    const isEncryptedRoom = currentRoomId && rooms[currentRoomId] && rooms[currentRoomId].is_encrypted;
+    console.log(`🔐 Room ${currentRoomId} encrypted: ${isEncryptedRoom}`);
+    
+    // Если информация о комнате еще не загружена, ждем
+    if (!rooms[currentRoomId]) {
+        showToast('🔄 Loading room information, please wait...', 'warning');
+        setTimeout(() => sendMessageToServer(selfDestruct), 1000);
+        return;
+    }
+    
+    // Если комната зашифрована, но нет публичного ключа - не отправляем
+    if (isEncryptedRoom && (!rooms[currentRoomId].public_key || rooms[currentRoomId].public_key === '')) {
+        showToast('🔐 Waiting for room encryption info...', 'warning');
+        setTimeout(() => sendMessageToServer(selfDestruct), 1000);
+        return;
+    }
     // Prepare message data
     const messageData = {
         text: text,
         self_destruct: selfDestruct,
-        reply_to: currentReplyMessage ? currentReplyMessage.id : null, // Добавляем ID сообщения для ответа
+        reply_to: currentReplyMessage ? currentReplyMessage.id : null,
         timestamp: Date.now(),
         type: 'text',
-        room_id: currentRoomId // Добавляем ID комнаты
+        room_id: currentRoomId,
+        username: currentUsername  // 🔐 Добавляем username в payload
     };
 
-    // Determine message type and prepare media
-    if (hasImage) {
-        messageData.type = 'image';
-        messageData.image = selectedImage;
-        messageData.text = hasText ? text : '🖼️ Image';
-    } else if (hasAudio) {
-        messageData.type = 'audio';
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        messageData.audio = await blobToBase64(audioBlob);
-        messageData.text = hasText ? text : '🎤 Voice message';
+    // 🔐 Добавляем флаг шифрования
+    if (isEncryptedRoom) {
+        messageData.is_encrypted = true;
+        
+        // Для зашифрованных комнат шифруем текст
+        if (hasText) {
+            try {
+                const encryptedResult = await encryptMessage(text, rooms[currentRoomId].public_key);
+                messageData.encrypted_data = encryptedResult.encrypted_content;
+                messageData.encryption_metadata = {
+                    encrypted_key: encryptedResult.encrypted_key,
+                    iv: encryptedResult.iv
+                };
+                // Очищаем исходный текст для зашифрованных сообщений
+                messageData.text = '🔒 Encrypted message';
+            } catch (error) {
+                console.error('Encryption error:', error);
+                showToast('❌ Encryption failed', 'error');
+                return;
+            }
+        }
     } else {
-        messageData.text = text;
+        // Для обычных комнат
+        messageData.is_encrypted = false;
+    }
+
+    // Определяем тип сообщения и готовим медиа (только для незашифрованных комнат)
+    if (!isEncryptedRoom) {
+        if (hasImage) {
+            messageData.type = 'image';
+            messageData.image = selectedImage;
+            messageData.text = hasText ? text : '🖼️ Image';
+        } else if (hasAudio) {
+            messageData.type = 'audio';
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            messageData.audio = await blobToBase64(audioBlob);
+            messageData.text = hasText ? text : '🎤 Voice message';
+        } else {
+            messageData.text = text;
+        }
     }
 
     // Добавляем в очередь
@@ -2379,12 +2857,14 @@ function initializeServerCommunication() {
         type: messageData.type
     };
 
-    // Добавляем медиа для временного отображения
-    if (hasImage) {
-        tempMessage.image = selectedImage;
-    } else if (hasAudio) {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        tempMessage.audio = URL.createObjectURL(audioBlob);
+    // Добавляем медиа для временного отображения (только для незашифрованных)
+    if (!isEncryptedRoom) {
+        if (hasImage) {
+            tempMessage.image = selectedImage;
+        } else if (hasAudio) {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            tempMessage.audio = URL.createObjectURL(audioBlob);
+        }
     }
 
     addMessageToChat(tempMessage);
@@ -2411,8 +2891,15 @@ function initializeServerCommunication() {
 
 
 // Добавляем защиту в processMessageQueue
- async function processMessageQueue() {
+async function processMessageQueue() {
     if (isSending || messageQueue.length === 0) return;
+    
+    // 🔐 Ждем пока информация о комнате загрузится
+    if (!rooms[currentRoomId] || (rooms[currentRoomId].is_encrypted && !rooms[currentRoomId].public_key)) {
+        console.log('🔐 Waiting for room information...');
+        setTimeout(processMessageQueue, 500);
+        return;
+    }
     
     isSending = true;
     const messageData = messageQueue[0];
@@ -2427,23 +2914,31 @@ function initializeServerCommunication() {
             username: currentUsername,
             text: messageData.text,
             type: messageData.type || 'text',
-            reply_to: messageData.reply_to || null, // Добавляем reply_to
+            reply_to: messageData.reply_to || null,
             room_id: currentRoomId,
-            self_destruct: messageData.self_destruct || false
+            self_destruct: messageData.self_destruct || false,
+            is_encrypted: messageData.is_encrypted || false  // 🔐 Добавляем флаг шифрования
         };
 
-        // Add image data if present
-        if (messageData.image) {
-            payload.image = messageData.image;
+        // 🔐 Добавляем зашифрованные данные если сообщение зашифровано
+        if (messageData.is_encrypted) {
+            payload.encrypted_data = messageData.encrypted_data;
+            payload.encryption_metadata = messageData.encryption_metadata;
         }
 
-        // Add audio data if present
-        if (messageData.audio) {
-            payload.audio = messageData.audio;
-            payload.type = 'audio';
+        // 🔐 Добавляем медиа только для незашифрованных сообщений
+        if (!messageData.is_encrypted) {
+            if (messageData.image) {
+                payload.image = messageData.image;
+                payload.type = 'image';
+            }
+            if (messageData.audio) {
+                payload.audio = messageData.audio;
+                payload.type = 'audio';
+            }
         }
 
-        console.log('Sending message with reply_to:', payload.reply_to);
+        console.log('Sending message with encrypted:', payload.is_encrypted);
 
         const response = await fetch(SERVER_URL + '/send', {
             method: 'POST',
@@ -2598,7 +3093,6 @@ function updateTempMessage(messageId, messageData, imageId, audioId) {
 
 
 
-
 async function getMessages() {
     if (!currentUsername || !currentRoomId) return;
     
@@ -2613,11 +3107,18 @@ async function getMessages() {
         
         const data = await response.json();
         
-        // 🔥 ОПТИМИЗАЦИЯ: обновляем реакции только если есть новые сообщения ИЛИ новые реакции
+        // 🔐 ОБНОВЛЯЕМ ИНФОРМАЦИЮ О КОМНАТЕ
+        if (data.is_encrypted !== undefined) {
+            rooms[currentRoomId] = {
+                is_encrypted: data.is_encrypted,
+                public_key: data.public_key || ''
+            };
+            console.log(`🔐 Room encryption status: ${data.is_encrypted}`);
+        }
+        
         let shouldUpdateReactions = false;
         
         if (data.reactions) {
-            // Сравниваем с текущими реакциями
             const hasNewReactions = JSON.stringify(data.reactions) !== JSON.stringify(messageReactions);
             if (hasNewReactions) {
                 console.log('🔄 New reactions detected, updating...');
@@ -2627,25 +3128,51 @@ async function getMessages() {
         }
         
         if (data.messages && data.messages.length > 0) {
-            data.messages.forEach(msg => {
+            for (let msg of data.messages) {
                 // Пропускаем свои собственные временные сообщения
                 if (msg.user === currentUsername && document.querySelector(`[data-message-id="${msg.id}"]`)) {
-                    return;
+                    continue;
                 }
                 
-                // Обрабатываем разные типы сообщений
                 let imageData = null;
                 let audioData = null;
                 let displayText = msg.text;
                 
-                // Получаем медиаданные из сообщения
-                if (msg.image_data) {
-                    imageData = msg.image_data;
-                    displayText = msg.text.replace('🖼️', '').trim();
-                }
-                if (msg.audio_data) {
-                    audioData = msg.audio_data;
-                    displayText = msg.text.replace('🎤', '').trim();
+                // 🔐 ДЕШИФРУЕМ СООБЩЕНИЯ ЕСЛИ ОНИ ЗАШИФРОВАНЫ
+                // В функции getMessages(), найди часть с дешифрованием и замени:
+if (msg.is_encrypted && msg.encrypted_data && currentPrivateKey) {
+    try {
+        console.log('🔐 Decrypting incoming message...');
+        const decryptedText = await decryptMessage(
+            msg.encrypted_data, 
+            msg.encryption_metadata, 
+            currentPrivateKey
+        );
+        displayText = decryptedText;
+        console.log('🔐 Successfully decrypted:', decryptedText);
+    } catch (error) {
+        console.error('❌ Failed to decrypt message:', error);
+        displayText = '🔒 Unable to decrypt message (invalid key)';
+    }
+} else if (msg.is_encrypted && !currentPrivateKey) {
+    // Сообщение зашифровано, но у нас нет ключа
+    if (msg.user === currentUsername) {
+        displayText = '🔒 Your encrypted message (waiting for key)';
+    } else {
+        displayText = '🔒 Encrypted message';
+    }
+}
+                
+                // Получаем медиаданные из сообщения (только для незашифрованных)
+                if (!msg.is_encrypted) {
+                    if (msg.image_data) {
+                        imageData = msg.image_data;
+                        displayText = msg.text.replace('🖼️', '').trim();
+                    }
+                    if (msg.audio_data) {
+                        audioData = msg.audio_data;
+                        displayText = msg.text.replace('🎤', '').trim();
+                    }
                 }
                 
                 // Загружаем реакции для этого сообщения с сервера
@@ -2653,7 +3180,6 @@ async function getMessages() {
                     messageReactions[msg.id] = msg.reactions;
                     console.log(`Loaded reactions for message ${msg.id}:`, msg.reactions);
                     
-                    // ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ UI ДЛЯ ЭТОГО СООБЩЕНИЯ
                     setTimeout(() => {
                         updateMessageReactions(msg.id);
                     }, 100);
@@ -2669,12 +3195,13 @@ async function getMessages() {
                     isOwn: msg.user === currentUsername,
                     type: msg.type || 'text',
                     reply_to: msg.reply_to,
-                    selfDestruct: msg.self_destruct || false
+                    selfDestruct: msg.self_destruct || false,
+                    is_encrypted: msg.is_encrypted // 🔐 Передаем флаг шифрования
                 });
 
-                // Уведомления
+                // Уведомления (только для расшифрованных сообщений)
                 if (msg.user !== currentUsername && settings.browserNotifications && 'Notification' in window && Notification.permission === 'granted') {
-                    let notificationText = msg.text;
+                    let notificationText = displayText;
                     if (msg.type === 'image') {
                         notificationText = '📸 Image';
                     } else if (msg.type === 'audio') {
@@ -2687,13 +3214,12 @@ async function getMessages() {
                         tag: 'securecomm'
                     });
                 }
-            });
+            }
             
             lastMessageId = Math.max(lastMessageId, ...data.messages.map(m => m.id));
-            shouldUpdateReactions = true; // При новых сообщениях тоже обновляем реакции
+            shouldUpdateReactions = true;
         }
 
-        // 🔥 ОПТИМИЗАЦИЯ: обновляем пользователей только если есть изменения
         if (data.users) {
             updateUsersList(data.users);
         }
@@ -2704,7 +3230,6 @@ async function getMessages() {
             document.getElementById('roomNameDisplay').textContent = currentRoom;
         }
         
-        // 🔥 ОПТИМИЗАЦИЯ: обновляем ВСЕ реакции только если есть изменения
         if (shouldUpdateReactions) {
             setTimeout(() => {
                 refreshAllReactions();
@@ -2719,7 +3244,6 @@ async function getMessages() {
         console.error('Receive error:', error);
         document.getElementById('chatStatus').textContent = 'Connection unstable - reconnecting...';
         document.getElementById('chatStatus').classList.add('text-warning');
-        // 🔥 ОПТИМИЗАЦИЯ: увеличиваем интервал при ошибках
         setTimeout(getMessages, 5000);
     }
 }
@@ -2738,13 +3262,12 @@ async function getMessages() {
 
 
 
-   function addMessageToChat(message) {
+  function addMessageToChat(message) {
     const container = document.getElementById('messagesContainer');
 
     // Check for duplicate messages
     const existingMessage = container.querySelector(`[data-message-id="${message.id}"]`);
     if (existingMessage) {
-        // Если сообщение уже существует, обновляем реакции
         updateMessageReactions(message.id);
         return;
     }
@@ -2757,6 +3280,12 @@ async function getMessages() {
     let mediaHtml = '';
     let displayText = message.text;
     
+    // 🔐 Добавляем иконку шифрования если сообщение зашифровано
+    let encryptionIcon = '';
+    if (message.is_encrypted) {
+        encryptionIcon = '<i class="bi bi-shield-lock-fill text-success me-1" title="End-to-end encrypted"></i>';
+    }
+    
     // Handle different message types
     if (message.type === 'image' && message.image) {
         mediaHtml = `
@@ -2766,9 +3295,6 @@ async function getMessages() {
             </div>
         `;
         displayText = '';
-        if (!message.isTemp) {
-            imageMessages[message.id] = message.image;
-        }
     } else if (message.type === 'audio' && message.audio) {
         mediaHtml = `
             <div class="message-audio-container">
@@ -2779,9 +3305,6 @@ async function getMessages() {
             </div>
         `;
         displayText = '';
-        if (!message.isTemp) {
-            audioMessages[message.id] = message.audio;
-        }
     } else if (message.image) {
         // Fallback for old image format
         mediaHtml = `
@@ -2791,12 +3314,9 @@ async function getMessages() {
             </div>
         `;
         displayText = '';
-        if (!message.isTemp) {
-            imageMessages[message.id] = message.image;
-        }
     }
     
-    // Обрабатываем ответ на сообщение (используем reply_to из сервера)
+    // Обрабатываем ответ на сообщение
     let replyHtml = '';
     if (message.reply_to) {
         const repliedMessage = findMessageById(message.reply_to);
@@ -2820,53 +3340,52 @@ async function getMessages() {
         `<span class="message-time">${message.timestamp}</span>` : 
         `<span class="message-time" style="display: none;">${message.timestamp}</span>`;
     
-    // Reactions for this message - загружаем из глобального хранилища
+    // Reactions for this message
     const reactions = messageReactions[message.id] || {};
-    console.log(`Message ${message.id} reactions:`, reactions); 
-const reactionsHtml = Object.keys(reactions).length > 0 ? 
-    createReactionsHtml(message.id, reactions) : '<div class="message-reactions" style="display: none;"></div>';
+    const reactionsHtml = Object.keys(reactions).length > 0 ? 
+        createReactionsHtml(message.id, reactions) : '<div class="message-reactions" style="display: none;"></div>';
 
-messageDiv.innerHTML = `
-    <div class="message-bubble ${message.selfDestruct && !message.isTemp ? 'self-destructing' : ''}">
-        ${message.isTemp ? '<div class="sending-indicator">⏳</div>' : ''}
-        
-        <div class="message-actions">
-            <button class="message-action-btn" onclick="showReactionPicker('${message.id}')" title="React">
-                <i class="bi bi-emoji-smile"></i>
-            </button>
-            <button class="message-action-btn" onclick="replyToMessage('${message.id}')" title="Reply">
-                <i class="bi bi-reply"></i>
-            </button>
-            <button class="message-action-btn" onclick="pinMessage('${message.id}')" title="Pin">
-                <i class="bi bi-pin"></i>
-            </button>
-            <button class="message-action-btn" onclick="copyMessageText('${message.id}')" title="Copy">
-                <i class="bi bi-clipboard"></i>
-            </button>
+    messageDiv.innerHTML = `
+        <div class="message-bubble ${message.selfDestruct && !message.isTemp ? 'self-destructing' : ''}">
+            ${message.isTemp ? '<div class="sending-indicator">⏳</div>' : ''}
+            
+            <div class="message-actions">
+                <button class="message-action-btn" onclick="showReactionPicker('${message.id}')" title="React">
+                    <i class="bi bi-emoji-smile"></i>
+                </button>
+                <button class="message-action-btn" onclick="replyToMessage('${message.id}')" title="Reply">
+                    <i class="bi bi-reply"></i>
+                </button>
+                <button class="message-action-btn" onclick="pinMessage('${message.id}')" title="Pin">
+                    <i class="bi bi-pin"></i>
+                </button>
+                <button class="message-action-btn" onclick="copyMessageText('${message.id}')" title="Copy">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+            
+            ${selfDestructHtml}
+            ${replyHtml}
+            
+            <div class="message-header d-flex justify-content-between align-items-center">
+                <span class="message-sender">${encryptionIcon}${message.sender}</span>
+                ${showTime}
+            </div>
+            
+            ${displayText ? `<div class="message-text">${formatMessageText(displayText)}</div>` : ''}
+            ${mediaHtml}
+            ${reactionsHtml}
+            
+            <div class="reaction-picker" id="reactionPicker-${message.id}">
+                ${REACTIONS.map(emoji => 
+                    `<div class="reaction-emoji" onclick="addReaction('${message.id}', '${emoji}')">${emoji}</div>`
+                ).join('')}
+                <button class="reaction-close-btn" onclick="this.parentElement.classList.remove('show')">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
         </div>
-        
-        ${selfDestructHtml}
-        ${replyHtml}
-        
-        <div class="message-header d-flex justify-content-between align-items-center">
-            <span class="message-sender">${message.sender}</span>
-            ${showTime}
-        </div>
-        
-        ${displayText ? `<div class="message-text">${formatMessageText(displayText)}</div>` : ''}
-        ${mediaHtml}
-        ${reactionsHtml}
-        
-        <div class="reaction-picker" id="reactionPicker-${message.id}">
-            ${REACTIONS.map(emoji => 
-                `<div class="reaction-emoji" onclick="addReaction('${message.id}', '${emoji}')">${emoji}</div>`
-            ).join('')}
-            <button class="reaction-close-btn" onclick="this.parentElement.classList.remove('show')">
-                <i class="bi bi-x"></i>
-            </button>
-        </div>
-    </div>
-`;
+    `;
     
     container.appendChild(messageDiv);
     
@@ -3080,58 +3599,68 @@ async function addReaction(messageId, emoji) {
             })
         });
 
-        if (response.ok) {
-            const result = await response.json();
-            
-            // Эффект для добавленной реакции
-// Плавный эффект для добавленной реакции
-const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-const reactionElement = document.querySelector(`[data-message-id="${messageId}"] .reaction[onclick*="${emoji}"]`);
-
-if (messageElement && reactionElement) {
-    // Анимация всего сообщения
-    messageElement.style.animation = 'gentlePulse 0.6s ease-in-out';
-    
-    // Анимация баббла сообщения
-    const messageBubble = messageElement.querySelector('.message-bubble');
-    if (messageBubble) {
-        messageBubble.style.animation = 'softGlow 0.8s ease-in-out';
-    }
-    
-    // Анимация самой реакции
-    reactionElement.style.transform = 'scale(1.2)';
-    reactionElement.style.background = 'var(--accent-blue)';
-    
-    setTimeout(() => {
-        reactionElement.style.transform = 'scale(1.1)';
-        reactionElement.style.background = 'rgba(66, 133, 244, 0.8)';
-    }, 300);
-    
-    setTimeout(() => {
-        if (reactionElement) {
-            reactionElement.style.transform = '';
-            reactionElement.style.background = '';
-        }
-        messageElement.style.animation = '';
-        if (messageBubble) messageBubble.style.animation = '';
-    }, 1000);
-}
-            
-            if (result.reactions) {
-                messageReactions[messageId] = result.reactions;
+        if (!response.ok) {
+            // 🔧 Более детальная обработка ошибок
+            if (response.status === 404) {
+                throw new Error('Server endpoint not found');
+            } else if (response.status === 0) {
+                throw new Error('Network error - CORS or connection failed');
             }
             
-            updateMessageReactions(messageId);
-            showToast(`${emoji} Reaction added!`, 'success');
-            document.getElementById(`reactionPicker-${messageId}`).classList.remove('show');
-            
-        } else {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to add reaction');
+            throw new Error(errorData.error || `HTTP ${response.status}`);
         }
+
+        const result = await response.json();
+        
+        // Эффект для добавленной реакции
+        const reactionElement = document.querySelector(`[data-message-id="${messageId}"] .reaction[onclick*="${emoji}"]`);
+
+        if (messageElement && reactionElement) {
+            messageElement.style.animation = 'gentlePulse 0.6s ease-in-out';
+            
+            const messageBubble = messageElement.querySelector('.message-bubble');
+            if (messageBubble) {
+                messageBubble.style.animation = 'softGlow 0.8s ease-in-out';
+            }
+            
+            reactionElement.style.transform = 'scale(1.2)';
+            reactionElement.style.background = 'var(--accent-blue)';
+            
+            setTimeout(() => {
+                reactionElement.style.transform = 'scale(1.1)';
+                reactionElement.style.background = 'rgba(66, 133, 244, 0.8)';
+            }, 300);
+            
+            setTimeout(() => {
+                if (reactionElement) {
+                    reactionElement.style.transform = '';
+                    reactionElement.style.background = '';
+                }
+                messageElement.style.animation = '';
+                if (messageBubble) messageBubble.style.animation = '';
+            }, 1000);
+        }
+            
+        if (result.reactions) {
+            messageReactions[messageId] = result.reactions;
+        }
+        
+        updateMessageReactions(messageId);
+        showToast(`${emoji} Reaction added!`, 'success');
+        document.getElementById(`reactionPicker-${messageId}`).classList.remove('show');
+        
     } catch (error) {
         console.error('Error adding reaction:', error);
-        showToast('❌ Failed to add reaction', 'error');
+        
+        // 🔧 Более информативные сообщения об ошибках
+        if (error.message.includes('CORS') || error.message.includes('Network error')) {
+            showToast('❌ Network error - check server CORS settings', 'error');
+        } else if (error.message.includes('404')) {
+            showToast('❌ Server endpoint not found', 'error');
+        } else {
+            showToast('❌ Failed to add reaction', 'error');
+        }
     }
 }
 
