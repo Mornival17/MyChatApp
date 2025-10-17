@@ -2302,7 +2302,6 @@ async function generateEncryptionKeys() {
 }
 
 function showKeyDownloadNotification(roomId) {
-    // Создаем красивый попап с информацией о ключе
     const notificationDiv = document.createElement('div');
     notificationDiv.className = 'custom-toast key-download-toast';
     notificationDiv.style.background = 'var(--bg-card)';
@@ -2316,18 +2315,15 @@ function showKeyDownloadNotification(roomId) {
                 <div class="small text-muted">
                     File: <code>securecomm_${roomId}_private.key</code>
                     <br>📁 Check your Downloads folder
-                    <br>💾 Save it securely - it's required to read messages!
+                    <br>📱 In Cordova: Check app documents folder
+                    <br>💾 Save it securely!
                 </div>
             </div>
-            <button class="btn btn-sm btn-outline-secondary ms-3" onclick="this.parentElement.parentElement.remove()">
-                <i class="bi bi-x"></i>
-            </button>
         </div>
     `;
     
     document.body.appendChild(notificationDiv);
     
-    // Автоматическое скрытие через 10 секунд
     setTimeout(() => {
         if (notificationDiv.parentElement) {
             notificationDiv.remove();
@@ -2404,36 +2400,35 @@ function showMobileDownloadInstructions(url, roomId) {
 }
 
 // Скачивание приватного ключа
+// Скачивание приватного ключа для Cordova
 function downloadPrivateKey(privateKeyBase64, roomId) {
     try {
-        // Создаем blob с приватным ключом
+        const fileName = `securecomm_${roomId}_private.key`;
+        
+        // Просто создаем и скачиваем файл
         const blob = new Blob([privateKeyBase64], { 
             type: 'application/octet-stream' 
         });
         const url = URL.createObjectURL(blob);
         
-        // Создаем ссылку для скачивания
         const a = document.createElement('a');
         a.href = url;
-        a.download = `securecomm_${roomId}_private.key`;
+        a.download = fileName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         
         // Очищаем URL
-        URL.revokeObjectURL(url);
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 1000);
         
-        console.log("🔐 Private key downloaded for room:", roomId);
-        
-        // 🔔 ПОКАЗЫВАЕМ ЯВНОЕ УВЕДОМЛЕНИЕ О ЗАГРУЗКЕ
+        console.log("✅ Private key download triggered");
         showKeyDownloadNotification(roomId);
         
     } catch (error) {
         console.error("❌ Error downloading private key:", error);
         showToast("❌ Failed to download private key", "error");
-        
-        // 🔄 Альтернативный метод для мобильных
-        fallbackKeyDownload(privateKeyBase64, roomId);
     }
 }
 
