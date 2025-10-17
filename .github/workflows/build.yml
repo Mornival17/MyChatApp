@@ -1,13 +1,17 @@
-name: Build Cordova App
+name: Build SecureComm APK
 
 on:
   push:
     branches: [ main, master ]
+    paths-ignore:
+      - 'README.md'
+      - '**.md'
   pull_request:
     branches: [ main, master ]
 
 jobs:
-  build:
+  build-android:
+    name: Build Android APK
     runs-on: ubuntu-latest
     
     steps:
@@ -29,15 +33,21 @@ jobs:
       run: |
         cordova platform add android
         
-    - name: Build Android APK
+    - name: Build Android APK (Debug)
       run: |
-        cordova build android --release
+        cordova build android --debug
         mkdir -p dist
-        cp platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk dist/
+        cp platforms/android/app/build/outputs/apk/debug/app-debug.apk dist/securecomm.apk
         
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: android-apk
-        path: dist/
+        name: securecomm-app
+        path: dist/securecomm.apk
         retention-days: 30
+        
+    - name: Show build success
+      run: |
+        echo "✅ Build completed successfully!"
+        echo "📱 APK: dist/securecomm.apk"
+        echo "📦 File size: $(du -h dist/securecomm.apk | cut -f1)"
