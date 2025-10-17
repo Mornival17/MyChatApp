@@ -24,16 +24,25 @@ jobs:
         node-version: '18'
         cache: 'npm'
         
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        
     - name: Install dependencies
       run: |
         npm install -g cordova
         npm install
         
-    - name: Add Android platform
+    - name: Add compatible Android platform
       run: |
-        cordova platform add android
+        # Удаляем если уже есть
+        cordova platform rm android || true
+        # Добавляем совместимую версию
+        cordova platform add android@10.1.1
         
-    - name: Build Android APK (Debug)
+    - name: Build Android APK
       run: |
         cordova build android --debug
         mkdir -p dist
@@ -45,9 +54,3 @@ jobs:
         name: securecomm-app
         path: dist/securecomm.apk
         retention-days: 30
-        
-    - name: Show build success
-      run: |
-        echo "✅ Build completed successfully!"
-        echo "📱 APK: dist/securecomm.apk"
-        echo "📦 File size: $(du -h dist/securecomm.apk | cut -f1)"
