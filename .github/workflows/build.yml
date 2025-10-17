@@ -35,10 +35,10 @@ jobs:
         npm install -g cordova
         npm install
         
-    - name: Add Android platform
+    - name: Add latest Android platform
       run: |
         cordova platform rm android || true
-        cordova platform add android@10.1.1
+        cordova platform add android@latest
         
     - name: Build Android APK
       run: |
@@ -52,11 +52,3 @@ jobs:
         name: securecomm-app
         path: dist/securecomm.apk
         retention-days: 30
-        
-    - name: Show build info
-      run: |
-        echo "✅ Build completed successfully!"
-        echo "📱 APK: dist/securecomm.apk"
-        echo "📦 File size: $(du -h dist/securecomm.apk | cut -f1)"
-        echo "🔧 Java version: $(java -version 2>&1 | head -n 1)"
-        echo "📱 Cordova Android version: $(cordova platform ls | grep android)"
