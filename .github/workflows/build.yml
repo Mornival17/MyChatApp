@@ -1,0 +1,43 @@
+name: Build Cordova App
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm install -g cordova
+        npm install
+        
+    - name: Add Android platform
+      run: |
+        cordova platform add android
+        
+    - name: Build Android APK
+      run: |
+        cordova build android --release
+        mkdir -p dist
+        cp platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk dist/
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk
+        path: dist/
+        retention-days: 30

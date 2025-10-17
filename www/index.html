@@ -8,10 +8,105 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <style>
+    
 
-        
+    <!-- PWA Manifest -->
+<link rel="manifest" href="/app.webmanifest">
+<meta name="theme-color" content="#0a0c12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SecureComm">
 
+<!-- Icons -->
+<link rel="icon" type="image/png" href="/icons/icon-72x72.png" sizes="72x72">
+<link rel="icon" type="image/png" href="/icons/icon-96x96.png" sizes="96x96">
+<link rel="icon" type="image/png" href="/icons/icon-128x128.png" sizes="128x128">
+<link rel="icon" type="image/png" href="/icons/icon-144x144.png" sizes="144x144">
+<link rel="icon" type="image/png" href="/icons/icon-152x152.png" sizes="152x152">
+<link rel="icon" type="image/png" href="/icons/icon-192x192.png" sizes="192x192">
+<link rel="icon" type="image/png" href="/icons/icon-384x384.png" sizes="384x384">
+<link rel="icon" type="image/png" href="/icons/icon-512x512.png" sizes="512x512">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+<!-- Splash Screens -->
+<link rel="apple-touch-startup-image" href="/splashscreens/iphone5_splash.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
+<link rel="apple-touch-startup-image" href="/splashscreens/iphone6_splash.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+<link rel="apple-touch-startup-image" href="/splashscreens/iphoneplus_splash.png" media="(device-width: 621px) and (device-height: 1104px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="/splashscreens/iphonex_splash.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    
+    
+    <style>   
+
+
+/* 📱 Стили для PWA */
+.pwa-mode .chat-area {
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+}
+
+/* 🔔 Стили для уведомлений о ключах */
+.key-download-toast {
+    max-width: 400px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+}
+
+.key-download-fallback {
+    animation: slideInUp 0.5s ease;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 📱 Инструкции для мобильных */
+.mobile-download-instructions {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+}
+
+.mobile-download-instructions ol {
+    padding-left: 20px;
+    margin-bottom: 15px;
+}
+
+.mobile-download-instructions li {
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+/* 🔔 Кнопка установки приложения */
+.install-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10000;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+        transform: translate3d(0,0,0);
+    }
+    40%, 43% {
+        transform: translate3d(0,-8px,0);
+    }
+    70% {
+        transform: translate3d(0,-4px,0);
+    }
+    90% {
+        transform: translate3d(0,-2px,0);
+    }
+}
 
         :root {
     --bg-dark: #0a0c12;
@@ -2011,6 +2106,8 @@ let rooms = {}; // {room_id: {is_encrypted: bool, public_key: string}}
         // Initialize voice visualizer
         initVoiceVisualizer();
 
+        setupMobileOptimizations();
+
         // Setup settings event listeners
         document.getElementById('themeSelect').addEventListener('change', (e) => {
             changeTheme(e.target.value);
@@ -2100,6 +2197,74 @@ let rooms = {}; // {room_id: {is_encrypted: bool, public_key: string}}
             encryptionInfo.remove();
         }
     });
+    
+// 🎨 Инициализация PWA
+function initializePWA() {
+    // Проверяем, установлено ли приложение
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('📱 App running in standalone mode');
+        document.body.classList.add('pwa-mode');
+    }
+    
+    // Показываем кнопку установки если поддерживается
+    if ('BeforeInstallPromptEvent' in window) {
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallButton();
+        });
+        
+        function showInstallButton() {
+            const installBtn = document.createElement('button');
+            installBtn.className = 'btn btn-success btn-sm position-fixed';
+            installBtn.style.bottom = '20px';
+            installBtn.style.left = '20px';
+            installBtn.style.zIndex = '10000';
+            installBtn.innerHTML = '<i class="bi bi-download me-2"></i>Install App';
+            installBtn.onclick = installApp;
+            
+            document.body.appendChild(installBtn);
+        }
+        
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('📱 App installed');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+    }
+}
+
+// 📱 Функция установки приложения
+function installApp() {
+    if ('BeforeInstallPromptEvent' in window) {
+        window.deferredPrompt.prompt();
+        window.deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                showToast('📱 App installed successfully!', 'success');
+            }
+        });
+    }
+}
+
+// 🎨 Инициализация улучшений для мобильных
+initializePWA();
+setupMobileNotifications();
+setupMobileOptimizations();
+
+// 📱 Определяем тип устройства
+if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) {
+    document.body.classList.add('mobile-device');
+    console.log('📱 Mobile device detected');
+}
+
 
     }
 
@@ -2149,6 +2314,108 @@ async function generateEncryptionKeys() {
     }
 }
 
+function showKeyDownloadNotification(roomId) {
+    // Создаем красивый попап с информацией о ключе
+    const notificationDiv = document.createElement('div');
+    notificationDiv.className = 'custom-toast key-download-toast';
+    notificationDiv.style.background = 'var(--bg-card)';
+    notificationDiv.style.borderLeft = '4px solid var(--accent-green)';
+    notificationDiv.style.maxWidth = '90%';
+    notificationDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi bi-shield-check text-success me-2 fs-5"></i>
+            <div>
+                <strong>🔐 Private Key Downloaded!</strong>
+                <div class="small text-muted">
+                    File: <code>securecomm_${roomId}_private.key</code>
+                    <br>📁 Check your Downloads folder
+                    <br>💾 Save it securely - it's required to read messages!
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary ms-3" onclick="this.parentElement.parentElement.remove()">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notificationDiv);
+    
+    // Автоматическое скрытие через 10 секунд
+    setTimeout(() => {
+        if (notificationDiv.parentElement) {
+            notificationDiv.remove();
+        }
+    }, 10000);
+}
+
+function fallbackKeyDownload(privateKeyBase64, roomId) {
+    // Создаем видимую кнопку для ручной загрузки
+    const downloadSection = document.createElement('div');
+    downloadSection.className = 'key-download-fallback p-3 mt-3';
+    downloadSection.style.background = 'rgba(52, 168, 83, 0.1)';
+    downloadSection.style.borderRadius = '8px';
+    downloadSection.style.border = '1px solid var(--accent-green)';
+    downloadSection.innerHTML = `
+        <div class="text-center">
+            <i class="bi bi-shield-exclamation text-warning fs-2 mb-2"></i>
+            <h6>Manual Key Download Required</h6>
+            <p class="small text-muted mb-2">
+                Automatic download failed. Click below to save your private key:
+            </p>
+            <button class="btn btn-success btn-sm" onclick="manualDownloadKey('${privateKeyBase64}', '${roomId}')">
+                <i class="bi bi-download me-2"></i>Download Private Key
+            </button>
+            <div class="mt-2 small text-muted">
+                ⚠️ Without this key, you won't be able to read messages!
+            </div>
+        </div>
+    `;
+    
+    // Добавляем в модальное окно создания комнаты
+    const modalBody = document.querySelector('#roomCreatedModal .modal-body');
+    const roomCodeDiv = modalBody.querySelector('.room-code');
+    modalBody.insertBefore(downloadSection, roomCodeDiv.nextSibling);
+}
+
+// 📲 Ручная загрузка ключа
+function manualDownloadKey(privateKeyBase64, roomId) {
+    const blob = new Blob([privateKeyBase64], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    
+    // Показываем инструкцию для мобильных
+    if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) {
+        showMobileDownloadInstructions(url, roomId);
+    } else {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `securecomm_${roomId}_private.key`;
+        a.click();
+    }
+    
+    URL.revokeObjectURL(url);
+    showToast('✅ Private key download started', 'success');
+}
+
+// 📱 Инструкции для мобильной загрузки
+function showMobileDownloadInstructions(url, roomId) {
+    const instructions = `
+        <div class="mobile-download-instructions">
+            <h6>📱 Mobile Download Instructions</h6>
+            <ol class="small text-start">
+                <li>Tap and hold the link below</li>
+                <li>Select "Download link" or "Save link"</li>
+                <li>Save the file to your device</li>
+            </ol>
+            <a href="${url}" download="securecomm_${roomId}_private.key" 
+               class="btn btn-outline-primary btn-sm">
+               <i class="bi bi-download me-2"></i>Download Key File
+            </a>
+        </div>
+    `;
+    
+    showToast(instructions, 'info', 15000); // Показываем дольше
+}
+
 // Скачивание приватного ключа
 function downloadPrivateKey(privateKeyBase64, roomId) {
     try {
@@ -2170,10 +2437,16 @@ function downloadPrivateKey(privateKeyBase64, roomId) {
         URL.revokeObjectURL(url);
         
         console.log("🔐 Private key downloaded for room:", roomId);
-        showToast("🔐 Private key downloaded - keep it safe!", "success");
+        
+        // 🔔 ПОКАЗЫВАЕМ ЯВНОЕ УВЕДОМЛЕНИЕ О ЗАГРУЗКЕ
+        showKeyDownloadNotification(roomId);
+        
     } catch (error) {
         console.error("❌ Error downloading private key:", error);
-        showToast("Failed to download private key", "error");
+        showToast("❌ Failed to download private key", "error");
+        
+        // 🔄 Альтернативный метод для мобильных
+        fallbackKeyDownload(privateKeyBase64, roomId);
     }
 }
 
@@ -2203,24 +2476,33 @@ function loadPrivateKeyFromFile(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const keyData = e.target.result;
-                // Проверяем базовую валидность ключа
+                const keyData = e.target.result.trim();
+                
+                // 🔐 Улучшенная валидация ключа
                 if (!keyData || keyData.length < 100) {
-                    reject(new Error("Invalid key file"));
+                    reject(new Error("Invalid key file - file too short"));
                     return;
                 }
+                
+                // Проверяем базовый формат (должен быть base64)
+                if (!/^[A-Za-z0-9+/=]+$/.test(keyData)) {
+                    reject(new Error("Invalid key format - not valid base64"));
+                    return;
+                }
+                
+                console.log("🔐 Private key loaded successfully, length:", keyData.length);
                 resolve(keyData);
             } catch (error) {
-                reject(error);
+                reject(new Error("Failed to read key file: " + error.message));
             }
         };
-        reader.onerror = reject;
+        reader.onerror = () => reject(new Error("Failed to read file"));
         reader.readAsText(file);
     });
 }
 
 
-// 🔐 Функция проверки типа комнаты
+// 🔐 Улучшенная функция проверки статуса комнаты
 async function checkRoomEncryptionStatus(roomId) {
     try {
         console.log(`🔐 Checking encryption status for room: ${roomId}`);
@@ -2236,20 +2518,19 @@ async function checkRoomEncryptionStatus(roomId) {
             if (roomInfo.is_encrypted) {
                 keyUploadSection.style.display = 'block';
                 showToast('🔐 This room uses end-to-end encryption. Key file required.', 'info');
+                
+                // Автоматически показываем поле загрузки ключа
+                document.getElementById('keyUploadSection').style.display = 'block';
             } else {
                 keyUploadSection.style.display = 'none';
             }
-        } else {
-            // Если комната не найдена или другая ошибка
-            const keyUploadSection = document.getElementById('keyUploadSection');
-            keyUploadSection.style.display = 'none';
+            return roomInfo.is_encrypted;
         }
     } catch (error) {
         console.log('Room check error:', error);
-        // В случае ошибки скрываем поле загрузки ключа
-        const keyUploadSection = document.getElementById('keyUploadSection');
-        keyUploadSection.style.display = 'none';
+        document.getElementById('keyUploadSection').style.display = 'none';
     }
+    return false;
 }
 
     function createParallaxEffect() {
@@ -2755,6 +3036,7 @@ async function decryptMessage(encryptedData, encryptionMetadata, privateKeyBase6
 }
 
 
+// 🔐 Улучшенная функция отправки сообщений
 async function sendMessageToServer(selfDestruct = false) {
     const input = document.getElementById('messageInput');
     const text = input.value.trim();
@@ -2763,26 +3045,29 @@ async function sendMessageToServer(selfDestruct = false) {
     const hasImage = selectedImage !== null;
     const hasAudio = audioChunks.length > 0;
     
-    if (!hasText && !hasImage && !hasAudio) return;
+    if (!hasText && !hasImage && !hasAudio) {
+        showToast('Please enter a message or attach media', 'warning');
+        return;
+    }
 
     // 🔐 Безопасная проверка типа комнаты
-    const isEncryptedRoom = currentRoomId && rooms[currentRoomId] && rooms[currentRoomId].is_encrypted;
-    console.log(`🔐 Room ${currentRoomId} encrypted: ${isEncryptedRoom}`);
-    
-    // Если информация о комнате еще не загружена, ждем
-    if (!rooms[currentRoomId]) {
+    if (!currentRoomId || !rooms[currentRoomId]) {
         showToast('🔄 Loading room information, please wait...', 'warning');
         setTimeout(() => sendMessageToServer(selfDestruct), 1000);
         return;
     }
     
+    const isEncryptedRoom = rooms[currentRoomId].is_encrypted;
+    console.log(`🔐 Room ${currentRoomId} encrypted: ${isEncryptedRoom}`);
+    
     // Если комната зашифрована, но нет публичного ключа - не отправляем
     if (isEncryptedRoom && (!rooms[currentRoomId].public_key || rooms[currentRoomId].public_key === '')) {
-        showToast('🔐 Waiting for room encryption info...', 'warning');
+        showToast('🔐 Waiting for room encryption setup...', 'warning');
         setTimeout(() => sendMessageToServer(selfDestruct), 1000);
         return;
     }
-    // Prepare message data
+
+    // Подготавливаем данные сообщения
     const messageData = {
         text: text,
         self_destruct: selfDestruct,
@@ -2790,10 +3075,10 @@ async function sendMessageToServer(selfDestruct = false) {
         timestamp: Date.now(),
         type: 'text',
         room_id: currentRoomId,
-        username: currentUsername  // 🔐 Добавляем username в payload
+        username: currentUsername
     };
 
-    // 🔐 Добавляем флаг шифрования
+    // 🔐 Обработка шифрования
     if (isEncryptedRoom) {
         messageData.is_encrypted = true;
         
@@ -2810,17 +3095,21 @@ async function sendMessageToServer(selfDestruct = false) {
                 messageData.text = '🔒 Encrypted message';
             } catch (error) {
                 console.error('Encryption error:', error);
-                showToast('❌ Encryption failed', 'error');
+                showToast('❌ Failed to encrypt message', 'error');
                 return;
             }
+        }
+        
+        // 🔐 Для зашифрованных комнат НЕ отправляем медиа в открытом виде
+        if (hasImage || hasAudio) {
+            showToast('🔐 Media not supported in encrypted rooms', 'warning');
+            return;
         }
     } else {
         // Для обычных комнат
         messageData.is_encrypted = false;
-    }
-
-    // Определяем тип сообщения и готовим медиа (только для незашифрованных комнат)
-    if (!isEncryptedRoom) {
+        
+        // Обрабатываем медиа для незашифрованных комнат
         if (hasImage) {
             messageData.type = 'image';
             messageData.image = selectedImage;
@@ -2830,15 +3119,13 @@ async function sendMessageToServer(selfDestruct = false) {
             const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
             messageData.audio = await blobToBase64(audioBlob);
             messageData.text = hasText ? text : '🎤 Voice message';
-        } else {
-            messageData.text = text;
         }
     }
 
-    // Добавляем в очередь
+    // Добавляем в очередь и показываем временное сообщение
     messageQueue.push(messageData);
     
-    // Clear input and show temporary message
+    // Очищаем поле ввода
     input.value = '';
     input.style.height = 'auto';
     
@@ -2854,7 +3141,8 @@ async function sendMessageToServer(selfDestruct = false) {
         isOwn: true,
         selfDestruct: selfDestruct,
         isTemp: true,
-        type: messageData.type
+        type: messageData.type,
+        is_encrypted: messageData.is_encrypted
     };
 
     // Добавляем медиа для временного отображения (только для незашифрованных)
@@ -2869,17 +3157,17 @@ async function sendMessageToServer(selfDestruct = false) {
 
     addMessageToChat(tempMessage);
 
-    // Clear media
+    // Очищаем медиа
     selectedImage = null;
     document.getElementById('imagePreview').classList.add('d-none');
     audioChunks = [];
     cancelReply();
     
-    // Hide pickers
+    // Скрываем пикеры
     document.getElementById('emojiPickerContainer').classList.remove('show');
     document.getElementById('templatesContainer').classList.remove('show');
     
-    // Send to server
+    // Отправляем на сервер
     await processMessageQueue();
 }
 
@@ -2891,12 +3179,13 @@ async function sendMessageToServer(selfDestruct = false) {
 
 
 // Добавляем защиту в processMessageQueue
+// 🛡️ Улучшенная функция обработки очереди сообщений
 async function processMessageQueue() {
     if (isSending || messageQueue.length === 0) return;
     
-    // 🔐 Ждем пока информация о комнате загрузится
-    if (!rooms[currentRoomId] || (rooms[currentRoomId].is_encrypted && !rooms[currentRoomId].public_key)) {
-        console.log('🔐 Waiting for room information...');
+    // 🔐 Проверяем доступность информации о комнате
+    if (!rooms[currentRoomId]) {
+        console.log('🔄 Waiting for room information...');
         setTimeout(processMessageQueue, 500);
         return;
     }
@@ -2917,7 +3206,7 @@ async function processMessageQueue() {
             reply_to: messageData.reply_to || null,
             room_id: currentRoomId,
             self_destruct: messageData.self_destruct || false,
-            is_encrypted: messageData.is_encrypted || false  // 🔐 Добавляем флаг шифрования
+            is_encrypted: messageData.is_encrypted || false
         };
 
         // 🔐 Добавляем зашифрованные данные если сообщение зашифровано
@@ -2938,7 +3227,11 @@ async function processMessageQueue() {
             }
         }
 
-        console.log('Sending message with encrypted:', payload.is_encrypted);
+        console.log('📤 Sending message:', { 
+            type: payload.type, 
+            encrypted: payload.is_encrypted,
+            hasMedia: !!(payload.image || payload.audio)
+        });
 
         const response = await fetch(SERVER_URL + '/send', {
             method: 'POST',
@@ -2949,7 +3242,7 @@ async function processMessageQueue() {
         });
         
         if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || `HTTP ${response.status}`);
         }
         
@@ -2960,10 +3253,11 @@ async function processMessageQueue() {
         
         if (result.message_id) {
             updateTempMessage(result.message_id, messageData, result.image_id, result.audio_id);
+            showToast('Message sent successfully', 'success');
         }
         
     } catch (error) {
-        console.error('Send error:', error);
+        console.error('❌ Send error:', error);
         
         if (retryCount < MAX_RETRIES) {
             retryCount++;
@@ -2980,6 +3274,7 @@ async function processMessageQueue() {
     } finally {
         isSending = false;
         
+        // Обрабатываем следующее сообщение в очереди
         if (messageQueue.length > 0) {
             setTimeout(processMessageQueue, 100);
         }
@@ -2988,8 +3283,37 @@ async function processMessageQueue() {
 
 
 
+// 📱 Улучшенная функция для мобильного меню
+function setupMobileOptimizations() {
+    // Оптимизация для сенсорных устройств
+    if ('ontouchstart' in window) {
+        // Увеличиваем тап-таргеты для мобильных
+        document.querySelectorAll('.message-action-btn').forEach(btn => {
+            btn.style.minHeight = '44px';
+            btn.style.minWidth = '44px';
+        });
+        
+        // Улучшаем скролл на мобильных
+        const messagesContainer = document.getElementById('messagesContainer');
+        messagesContainer.style.webkitOverflowScrolling = 'touch';
+        
+        // Предотвращаем зум при фокусе на поле ввода
+        document.getElementById('messageInput').addEventListener('focus', function() {
+            setTimeout(() => {
+                this.style.fontSize = '16px'; // Предотвращает зум в iOS
+            }, 100);
+        });
+    }
+    
+    // Обработка изменения ориентации
+    window.addEventListener('orientationchange', function() {
+        setTimeout(() => {
+            scrollToBottom();
+        }, 300);
+    });
+}
 
-
+// Вызовите эту функцию в initializeApp()
 
 
 
@@ -3506,7 +3830,7 @@ function createReactionsHtml(messageId, reactions) {
         const count = userArray.length;
         const hasReacted = userArray.includes(currentUsername);
         
-        // Обрезаем длинный список пользователей для title
+        // Форматируем список пользователей для подсказки
         const userList = userArray.length > 3 ? 
             userArray.slice(0, 3).join(', ') + ` and ${userArray.length - 3} more` : 
             userArray.join(', ');
@@ -3514,11 +3838,20 @@ function createReactionsHtml(messageId, reactions) {
         html += `
             <div class="reaction ${hasReacted ? 'active' : ''}" 
                  onclick="toggleReaction('${messageId}', '${emoji}')"
-                 title="${userList}">
-                ${emoji} ${count}
+                 title="${userList}"
+                 data-emoji="${emoji}">
+                <span class="reaction-emoji">${emoji}</span>
+                <span class="reaction-count">${count}</span>
             </div>
         `;
     }
+    
+    // Добавляем кнопку для добавления новой реакции
+    html += `
+        <div class="reaction reaction-add" onclick="showReactionPicker('${messageId}')" title="Add reaction">
+            <i class="bi bi-plus"></i>
+        </div>
+    `;
     
     html += '</div>';
     return html;
@@ -3532,26 +3865,41 @@ function showReactionPicker(messageId) {
     
     const picker = document.getElementById(`reactionPicker-${messageId}`);
     if (picker) {
-        // Для мобильных - позиционируем по центру
+        // Для мобильных - позиционируем по центру снизу
         if (window.innerWidth <= 768) {
-            picker.style.left = '50%';
-            picker.style.transform = 'translateX(-50%)';
-        } else {
-            // Для десктопа - позиционируем относительно сообщения
-            picker.style.left = '0';
-            picker.style.transform = 'none';
+            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (messageElement) {
+                const rect = messageElement.getBoundingClientRect();
+                picker.style.position = 'fixed';
+                picker.style.bottom = '80px';
+                picker.style.left = '50%';
+                picker.style.transform = 'translateX(-50%)';
+                picker.style.zIndex = '10000';
+            }
         }
         
         picker.classList.add('show');
         
-        // Автоматическое скрытие через 4 секунды на мобильных
+        // Автоматическое скрытие через 5 секунд на мобильных
         if (window.innerWidth <= 768) {
             setTimeout(() => {
                 if (picker.classList.contains('show')) {
                     picker.classList.remove('show');
                 }
-            }, 4000);
+            }, 5000);
         }
+        
+        // Закрытие при клике вне пикера
+        const closePicker = (e) => {
+            if (!picker.contains(e.target) && !e.target.closest(`[data-message-id="${messageId}"]`)) {
+                picker.classList.remove('show');
+                document.removeEventListener('click', closePicker);
+            }
+        };
+        
+        setTimeout(() => {
+            document.addEventListener('click', closePicker);
+        }, 100);
     }
 }
 
@@ -3865,10 +4213,27 @@ function updateMessageReactions(messageId) {
 
 
 
+// 🔊 Улучшенная функция записи голоса
 async function startRecording() {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
+        // Проверяем поддержку MediaRecorder
+        if (!navigator.mediaDevices || !window.MediaRecorder) {
+            showToast('Voice recording not supported in this browser', 'error');
+            return;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 44100
+            } 
+        });
+        
+        mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'audio/webm;codecs=opus'
+        });
+        
         audioChunks = []; // Очищаем chunks при начале записи
         
         mediaRecorder.ondataavailable = event => {
@@ -3877,23 +4242,60 @@ async function startRecording() {
             }
         };
         
-        mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-            sendVoiceMessage(audioBlob);
-            stream.getTracks().forEach(track => track.stop());
-            isRecording = false; // Сбрасываем флаг
+        mediaRecorder.onstop = async () => {
+            try {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                
+                // Проверяем длительность записи
+                if (audioBlob.size < 1000) { // Минимум 1KB
+                    showToast('Recording too short', 'warning');
+                    return;
+                }
+                
+                await sendVoiceMessage(audioBlob);
+            } catch (error) {
+                console.error('Error processing recording:', error);
+                showToast('Error processing voice message', 'error');
+            } finally {
+                stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+            }
         };
         
-        mediaRecorder.start();
-        isRecording = true; // Устанавливаем флаг
+        mediaRecorder.onerror = (event) => {
+            console.error('MediaRecorder error:', event.error);
+            showToast('Recording error: ' + event.error.name, 'error');
+            isRecording = false;
+        };
+        
+        mediaRecorder.start(100); // Собираем данные каждые 100ms
+        isRecording = true;
         document.getElementById('voiceRecorder').classList.add('active');
         startRecordingTimer();
         updateVoiceVisualizer();
         
     } catch (error) {
         console.error('Error starting recording:', error);
-        showToast('Microphone access denied', 'error');
+        if (error.name === 'NotAllowedError') {
+            showToast('Microphone access denied. Please allow microphone permissions.', 'error');
+        } else if (error.name === 'NotFoundError') {
+            showToast('No microphone found', 'error');
+        } else {
+            showToast('Failed to access microphone: ' + error.message, 'error');
+        }
         isRecording = false;
+    }
+}
+
+// 🔊 Улучшенная функция остановки записи
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        document.getElementById('voiceRecorder').classList.remove('active');
+        stopRecordingTimer();
+        
+        // Добавляем визуальную обратную связь
+        showToast('Voice recording completed', 'success');
     }
 }
 
@@ -4335,8 +4737,103 @@ function pinMessage(messageId) {
         }, 3000);
     }
 
-    function playMessageSound() {
-        // Simple beep sound
+function setupMobileNotifications() {
+    // Запрашиваем разрешение на уведомления
+    if ('Notification' in window) {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                console.log('🔔 Notification permission granted');
+            }
+        });
+    }
+    
+    // Проверяем поддержку Service Worker для Push-уведомлений
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        setupPushNotifications();
+    }
+}
+
+// 📲 Настройка Push-уведомлений
+async function setupPushNotifications() {
+    try {
+        // Регистрируем Service Worker
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('🔔 Service Worker registered');
+        
+        // Подписываемся на Push-уведомления
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')
+        });
+        
+        console.log('🔔 Push notifications subscribed');
+        
+    } catch (error) {
+        console.log('🔔 Push notifications not supported:', error);
+    }
+}
+
+// 🔔 Улучшенная функция показа уведомлений
+function showMobileNotification(title, body, message = null) {
+    // Проверяем видимость страницы
+    if (document.visibilityState === 'visible') {
+        // Страница видима - показываем только тост
+        showToast(`📱 ${title}: ${body}`, 'info');
+        return;
+    }
+    
+    // Страница не видима - показываем браузерное уведомление
+    if ('Notification' in window && Notification.permission === 'granted') {
+        const options = {
+            body: body,
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/badge-72x72.png',
+            tag: 'securecomm-message',
+            requireInteraction: true,
+            vibrate: [200, 100, 200], // Вибрация для мобильных
+            actions: [
+                {
+                    action: 'open',
+                    title: 'Open Chat'
+                },
+                {
+                    action: 'dismiss', 
+                    title: 'Dismiss'
+                }
+            ]
+        };
+        
+        const notification = new Notification(title, options);
+        
+        notification.onclick = function() {
+            window.focus();
+            notification.close();
+            
+            // Прокручиваем к сообщению если есть
+            if (message && message.id) {
+                const messageElement = document.querySelector(`[data-message-id="${message.id}"]`);
+                if (messageElement) {
+                    messageElement.scrollIntoView({ behavior: 'smooth' });
+                    messageElement.style.animation = 'pulse 2s';
+                }
+            }
+        };
+        
+        // Автоматическое закрытие через 10 секунд
+        setTimeout(() => {
+            notification.close();
+        }, 10000);
+    }
+    
+    // Проигрываем звук даже если уведомления запрещены
+    if (settings.soundNotifications) {
+        playMessageSound();
+    }
+}
+
+function playMessageSound() {
+    try {
+        // Создаем более приятный звук
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
@@ -4344,15 +4841,23 @@ function pinMessage(messageId) {
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
         
-        oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
+        // Более мягкий звук
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
         
         gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
         
         oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.2);
+        oscillator.stop(audioContext.currentTime + 0.3);
+        
+    } catch (error) {
+        console.log('🔊 Sound notification failed, using fallback');
+        // Фолбэк - простой бип
+        const beep = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmUgBjiN1/LMeSwF");
+        beep.play().catch(() => console.log('🔊 Audio play failed'));
     }
+}
 
     function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('show');

@@ -1,23 +1,35 @@
 {
-  "name": "com.mornival.chat",
-  "displayName": "PrivateChat",
+  "name": "securecomm-messenger",
+  "displayName": "SecureComm",
   "version": "1.0.0",
-  "description": "A sample Apache Cordova application that responds to the deviceready event.",
+  "description": "Secure Private Messenger with End-to-End Encryption",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "cordova build android",
+    "build:release": "cordova build android --release",
+    "run:android": "cordova run android",
+    "serve": "cordova serve",
+    "clean": "cordova clean"
   },
   "keywords": [
-    "ecosystem:cordova"
+    "messenger",
+    "secure",
+    "encryption",
+    "chat"
   ],
-  "author": "Apache Cordova Team",
+  "author": "SecureComm Team",
   "license": "Apache-2.0",
+  "dependencies": {
+    "cordova-android": "^10.1.2",
+    "cordova-browser": "^6.0.0"
+  },
   "devDependencies": {
-    "cordova-android": "^14.0.1"
+    "cordova": "^11.0.0"
   },
   "cordova": {
     "platforms": [
-      "android"
+      "android",
+      "browser"
     ]
   }
 }
